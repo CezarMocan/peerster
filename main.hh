@@ -44,14 +44,14 @@ class ChatDialog : public QDialog
 
 public:
 	ChatDialog();
-    QVariantMap createStatusMap(QMap<Peer, QVector<QString> > messages);
+    QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
 
-    QVariantMap serializeMessage(Peer from, QString text, int position);
+    QVariantMap serializeMessage(QString from, QString text, int position);
     QByteArray serializeVariantMap(QVariantMap map);
 
     void sendMessage(QVariantMap status, Peer to);
-    void sendMessage(Peer from, QString message, int position);
-    void sendMessage(Peer from, QString message, int position, Peer to);
+    void sendMessage(QString from, QString message, int position);
+    void sendMessage(QString from, QString message, int position, Peer to);
 
 
 public slots:
@@ -63,15 +63,14 @@ private:
     QString localStringName;
     QVector<Peer> peerList;
     Peer *localhost;
+    QString localhostName;
     NetSocket *sock;
     ReturnKeyFilter *returnKeyFilter;
 	QTextEdit *textview;
 	MultiLineEdit *textline;
 
-    QMap<Peer, QVector<QString> > messages;
+    QMap<QString, QVector<QString> > messages;
     
-    QMap<QString, Peer> nameToPeerMap;
-    QMap<Peer, QString> peerToNameMap;
 
     static const QString DEFAULT_TEXT_KEY;
     static const QString DEFAULT_ORIGIN_KEY;
@@ -80,10 +79,10 @@ private:
 
 
     void discoverPeers();
-    void spreadRumor(Peer from, QString message, int position);
+    void spreadRumor(QString from, QString message, int position);
     void sendStatus(Peer from);
 
-    int addReceivedMessage(Peer currentPeer, QString text, quint32 seqNo);
+    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
     void printMap(QVariantMap map, QString hostName);
     Peer peerLookupByAddress(QHostAddress address, quint16 port);
     int parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 port);
