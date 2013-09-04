@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <QKeyEvent>
 #include <QVariantMap>
+#include <QTimer>
 
 #include "main.hh"
 
@@ -15,6 +16,7 @@ const QString ChatDialog::DEFAULT_TEXT_KEY = QString("ChatText");
 const QString ChatDialog::DEFAULT_ORIGIN_KEY = QString("Origin");
 const QString ChatDialog::DEFAULT_SEQ_NO_KEY = QString("SeqNo");
 const QString ChatDialog::DEFAULT_WANT_KEY = QString("Want");
+const int ChatDialog::ANTI_ENTROPY_TIMER = 5000;
 
 bool ReturnKeyFilter::eventFilter(QObject *obj, QEvent *event) {
     if (event->type() == QEvent::KeyPress) {
@@ -88,6 +90,10 @@ ChatDialog::ChatDialog()
 	// so that we can send the message entered by the user.
 	connect(textline, SIGNAL(returnSignal()),
 		this, SLOT(gotReturnPressed()));
+
+    QTimer *timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(antiEntropySendStatus()));
+    timer->start(ANTI_ENTROPY_TIMER);
 }
 
 void ChatDialog::discoverPeers() {
@@ -179,6 +185,15 @@ void ChatDialog::sendStatus(Peer from) {
 
     qDebug() << localhost->hostAddress << localhost->port << localhostName << "Peer to name map: ";
     QMap<Peer, QString>::iterator it;
+}
+
+void ChatDialog::antiEntropySendStatus() {
+    srand(time(0));
+
+    Peer randomPeer = peerList[rand() % peerList.size()];
+    sendStatus(randomPeer);
+
+    qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
 }
 
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo) {

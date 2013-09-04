@@ -58,6 +58,7 @@ public slots:
 	void gotReturnPressed();
     void receiveMessage();
     void receivedStatusFromPeer();
+    void antiEntropySendStatus();
 
 private:
     QString localStringName;
@@ -76,6 +77,7 @@ private:
     static const QString DEFAULT_ORIGIN_KEY;
     static const QString DEFAULT_SEQ_NO_KEY;
     static const QString DEFAULT_WANT_KEY;
+    static const int ANTI_ENTROPY_TIMER;
 
 
     void discoverPeers();
