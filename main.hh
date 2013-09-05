@@ -54,11 +54,15 @@ public:
     void sendMessage(QString from, QString message, int position, Peer to);
 
 
+signals:
+    void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
+
 public slots:
 	void gotReturnPressed();
     void receiveMessage();
     void receivedStatusFromPeer();
     void antiEntropySendStatus();
+    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
 
 private:
     QString localStringName;
@@ -84,7 +88,6 @@ private:
     void spreadRumor(QString from, QString message, int position);
     void sendStatus(Peer from);
 
-    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
     void printMap(QVariantMap map, QString hostName);
     Peer peerLookupByAddress(QHostAddress address, quint16 port);
     int parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 port);

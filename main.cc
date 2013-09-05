@@ -94,6 +94,8 @@ ChatDialog::ChatDialog()
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(antiEntropySendStatus()));
     timer->start(ANTI_ENTROPY_TIMER);
+
+    connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32)), this, SLOT(addReceivedMessage(Peer, QString, QString, quint32)));
 }
 
 void ChatDialog::discoverPeers() {
@@ -101,12 +103,15 @@ void ChatDialog::discoverPeers() {
     int localPort = localhost->port;
 
     for (int p = 0; p < peerPorts.size(); p++) { 
-        if (abs(peerPorts[p] - localPort) != 1)
-            continue;
+//        if (abs(peerPorts[p] - localPort) != 1)
+//            continue;
 
         Peer currentPeer(QHostAddress::LocalHost, peerPorts[p]);
         peerList.push_back(currentPeer);
     }
+
+    Peer ivan(QHostAddress("128.36.232.37"), 33740);
+    peerList.push_back(ivan);
 }
 
 QVariantMap ChatDialog::serializeMessage(QString fromName, QString text, int position) {
@@ -153,11 +158,14 @@ void ChatDialog::gotReturnPressed()
 	// Insert some networking code here...
     QString message = textline->toPlainText();
 
-	textview->append("[" + localhostName + "]: " + message); 
+//	textview->append("[" + localhostName + "]: " + message); 
 
-    messages[localhostName].push_back(message);
+    //messages[localhostName].push_back(message);
 
-    sendMessage(localhostName, message, messages[localhostName].size());
+    emit(gotNewMessage(*localhost, localhostName, message, messages[localhostName].size() + 1));
+
+    //addReceivedMessage(*localhost, localhostName, message, messages[localhostName].size() + 1);
+    //sendMessage(localhostName, message, messages[localhostName].size());
 
 	// Clear the textline to get ready for the next input message.
 	textline->clear();
@@ -170,12 +178,16 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
         Peer randomPeer = peerList[rand() % peerList.size()];
         qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
         sendMessage(from, message, position, randomPeer);
-        
-        //TODO: Do we really need a timer here in rumormongering? why?
-        //QTimer::singleShot(2000, this, SLOT(receivedStatusFromPeer()));
+
         if (rand() % 2 == 0)
-            break;
+            return;
     }
+
+//    TODO: Implement the timer functionality here
+//    QTimer timer = new QTimer(this);
+//    timer->start(2000);
+//    connect(timer, SIGNAL(timeout()), this, SLOT(spreadRumor
+
 }
 
 void ChatDialog::sendStatus(Peer from) {
@@ -218,19 +230,6 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
     }
 }
 
-/*
-Peer ChatDialog::peerLookupByAddress(QHostAddress address, quint16 port) {
-    QMap<QString, Peer>::iterator it;
-    for (it = nameToPeerMap.begin(); it != nameToPeerMap.end(); ++it) {
-        if (it.value().hostAddress == address && it.value().port == port)
-            return it.value();
-    }
-
-    Peer dummy;
-    return dummy;
-}
-*/
-
 // Returns 0 for Message, 1 for Status, -1 for error
 int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 senderPort) {
     QVariantMap textVariantMap;
@@ -247,7 +246,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         if (!peerList.contains(currentPeer))
             peerList.push_back(currentPeer);
 
-        int status = addReceivedMessage(currentPeer, originName, receivedText, seqNo);
+        emit(gotNewMessage(currentPeer, originName, receivedText, seqNo)); 
 
         return 0;
     }
@@ -265,6 +264,8 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
 
         Peer currentPeer(sender, senderPort);
 
+        qDebug() << "Received status message from: " << sender << senderPort;
+
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
             QString gossipAboutName = it.key();
             int size = it.value().toInt();
@@ -273,6 +274,12 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
                 sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer);
                 return 0;
             }
+        }
+
+        QMap<QString, QVector<QString> >::iterator it2;
+        for (it2 = messages.begin(); it2 != messages.end(); ++it2) {
+            if (!wantMap.contains(it2.key()))
+                sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer);
         }
 
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
@@ -302,7 +309,6 @@ void ChatDialog::receiveMessage() {
         sock->readDatagram(datagram->data(), datagram->size(), &sender, &senderPort);
         
         parseMessage(datagram, sender, senderPort);
-        //createStatusMap(messages);
     }
 }
 
