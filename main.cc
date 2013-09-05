@@ -4,11 +4,13 @@
 #include <math.h>
 
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QApplication>
 #include <QDebug>
 #include <QKeyEvent>
 #include <QVariantMap>
 #include <QTimer>
+#include <QLabel>
 
 #include "main.hh"
 
@@ -16,7 +18,7 @@ const QString ChatDialog::DEFAULT_TEXT_KEY = QString("ChatText");
 const QString ChatDialog::DEFAULT_ORIGIN_KEY = QString("Origin");
 const QString ChatDialog::DEFAULT_SEQ_NO_KEY = QString("SeqNo");
 const QString ChatDialog::DEFAULT_WANT_KEY = QString("Want");
-const int ChatDialog::ANTI_ENTROPY_TIMER = 5000;
+const int ChatDialog::ANTI_ENTROPY_TIMER = 1000;
 
 bool ReturnKeyFilter::eventFilter(QObject *obj, QEvent *event) {
     if (event->type() == QEvent::KeyPress) {
@@ -47,7 +49,7 @@ ChatDialog::ChatDialog()
 
     srand(time(0));
 
-    localhostName = "cm795:" + QString::number(sock->getCurrentPort());
+    localhostName = "cm795:" + QString::number(rand() % 10000) + ":" + QString::number(sock->getCurrentPort());
     //localhostName = QString::number(rand()) + ":" + QString::number(sock->getCurrentPort());
     localhost = new Peer(QHostAddress::LocalHost, sock->getCurrentPort());
 
@@ -75,12 +77,35 @@ ChatDialog::ChatDialog()
     connect(returnKeyFilter, SIGNAL(returnKeyPressedSignal()),
         textline, SLOT(returnKeyPressedSlot()));
 
+
+    addressLine = new QLineEdit(this);
+    addressLabel = new QLabel("Host address", this);
+
+    portLine = new QLineEdit(this);
+    portLabel = new QLabel("Host port", this);
+
+    addPeerButton = new QPushButton("Add peer", this);
+
+    connect(addPeerButton, SIGNAL(clicked()), this, SLOT(addNewPeerFromUI()));
+
 	// Lay out the widgets to appear in the main window.
 	// For Qt widget and layout concepts see:
 	// http://doc.qt.nokia.com/4.7-snapshot/widgets-and-layouts.html
 	QVBoxLayout *layout = new QVBoxLayout();
 	layout->addWidget(textview);
 	layout->addWidget(textline);
+
+    QHBoxLayout *addressLayout = new QHBoxLayout();
+    addressLayout->addWidget(addressLabel);
+    addressLayout->addWidget(addressLine);
+    layout->addItem(addressLayout);
+
+    QHBoxLayout *portLayout = new QHBoxLayout();
+    portLayout->addWidget(portLabel);
+    portLayout->addWidget(portLine);
+    layout->addItem(portLayout);
+
+    layout->addWidget(addPeerButton);
 	setLayout(layout);
 
     // Set focus on the text box before, so the user doesn't have to do it
@@ -103,16 +128,55 @@ void ChatDialog::discoverPeers() {
     int localPort = localhost->port;
 
     for (int p = 0; p < peerPorts.size(); p++) { 
-//        if (abs(peerPorts[p] - localPort) != 1)
-//            continue;
-
         Peer currentPeer(QHostAddress::LocalHost, peerPorts[p]);
         peerList.push_back(currentPeer);
     }
 
-    Peer ivan(QHostAddress("128.36.232.37"), 33740);
-    peerList.push_back(ivan);
+//    Peer michael(QHostAddress("128.36.232.49"), 37180);
+//    peerList.push_back(michael);
 }
+
+void ChatDialog::addNewPeerFromUI() {
+    QString address = addressLine->text();
+    QString portS = portLine->text();
+
+    QHostAddress hostAddress(address);
+    qDebug() << "Host address: " << hostAddress;
+
+
+    quint16 port = portS.toInt();
+    if (port == 0) {
+        qDebug() << "Invalid port!";
+        return;
+    }
+
+    if (hostAddress.isNull()) {
+        QHostInfo::lookupHost(address, this, SLOT(lookedUp(QHostInfo)));       
+    } else {
+        Peer newPeer(hostAddress, port);
+        peerList.push_back(newPeer);
+        addressLine->clear();
+        portLine->clear();
+    }
+    
+}
+
+
+void ChatDialog::lookedUp(QHostInfo host) {
+    if (host.addresses().isEmpty()) {
+        qDebug() << "Invalid address";
+        return;
+    }
+
+    qDebug() << "New host: " << host.addresses().at(0) << portLine->text().toInt();
+
+    Peer newPeer(host.addresses().at(0), portLine->text().toInt());
+    peerList.push_back(newPeer);
+
+    addressLine->clear();
+    portLine->clear();
+}
+
 
 QVariantMap ChatDialog::serializeMessage(QString fromName, QString text, int position) {
     // Create the QVariantMap containing the message
@@ -176,7 +240,7 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
 
     while (1) {
         Peer randomPeer = peerList[rand() % peerList.size()];
-        qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
+        // qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
         sendMessage(from, message, position, randomPeer);
 
         if (rand() % 2 == 0)
@@ -192,11 +256,8 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
 
 void ChatDialog::sendStatus(Peer from) {
     QVariantMap status = createStatusMap(messages);
-    qDebug() << localhostName << ":Sending status to " << from.hostAddress << ":" << from.port;
+    // qDebug() << localhostName << ":Sending status to " << from.hostAddress << ":" << from.port;
     sendMessage(status, from);
-
-    qDebug() << localhost->hostAddress << localhost->port << localhostName << "Peer to name map: ";
-    QMap<Peer, QString>::iterator it;
 }
 
 void ChatDialog::antiEntropySendStatus() {
@@ -205,13 +266,13 @@ void ChatDialog::antiEntropySendStatus() {
     Peer randomPeer = peerList[rand() % peerList.size()];
     sendStatus(randomPeer);
 
-    qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
+//    qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
 }
 
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo) {
     int localSeqNo = messages[peerName].size() + 1; 
 
-    qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+    // qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
 
     // NEW MESSAGE! PROPAGAAAATE!!!
     if (seqNo == localSeqNo) {
@@ -242,7 +303,6 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         quint32 seqNo = textVariantMap[DEFAULT_SEQ_NO_KEY].toUInt();
 
         Peer currentPeer(sender, senderPort);
-
         if (!peerList.contains(currentPeer))
             peerList.push_back(currentPeer);
 
@@ -263,8 +323,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         // actually 0 if he does the same, but I can't rely on that
 
         Peer currentPeer(sender, senderPort);
+        if (!peerList.contains(currentPeer))
+            peerList.push_back(currentPeer);
 
-        qDebug() << "Received status message from: " << sender << senderPort;
+        // qDebug() << "Received status message from: " << sender << senderPort;
 
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
             QString gossipAboutName = it.key();
@@ -353,7 +415,7 @@ QVariantMap ChatDialog::createStatusMap(QMap<QString, QVector<QString> > message
     QVariantMap returnMap;
     returnMap.insert("Want", statusMap);
 
-    printMap(statusMap, localhostName);
+    //printMap(statusMap, localhostName);
 
     return returnMap;
 }

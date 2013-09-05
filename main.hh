@@ -7,6 +7,10 @@
 #include <QString>
 #include <QMap>
 #include <QVariant>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QLabel>
+#include <QHostInfo>
 
 #include "netsocket.hh"
 #include "peer.hh"
@@ -53,6 +57,8 @@ public:
     void sendMessage(QString from, QString message, int position);
     void sendMessage(QString from, QString message, int position, Peer to);
 
+    void addNewPeer(QString address, QString port);
+
 
 signals:
     void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
@@ -63,6 +69,8 @@ public slots:
     void receivedStatusFromPeer();
     void antiEntropySendStatus();
     int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
+    void addNewPeerFromUI();
+    void lookedUp(QHostInfo host);
 
 private:
     QString localStringName;
@@ -73,6 +81,14 @@ private:
     ReturnKeyFilter *returnKeyFilter;
 	QTextEdit *textview;
 	MultiLineEdit *textline;
+
+    QLineEdit *addressLine;
+    QLabel *addressLabel;
+
+    QLineEdit *portLine;
+    QLabel *portLabel;
+
+    QPushButton *addPeerButton;
 
     QMap<QString, QVector<QString> > messages;
     
