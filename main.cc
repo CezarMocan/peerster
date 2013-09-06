@@ -126,7 +126,7 @@ ChatDialog::ChatDialog()
 void ChatDialog::discoverPeers() {
     QVector<int> peerPorts = sock->getLocalhostPorts();
     int localPort = localhost->port;
-
+    
     for (int p = 0; p < peerPorts.size(); p++) { 
         Peer currentPeer(QHostAddress::LocalHost, peerPorts[p]);
         peerList.push_back(currentPeer);
@@ -157,10 +157,38 @@ void ChatDialog::addNewPeerFromUI() {
         peerList.push_back(newPeer);
         addressLine->clear();
         portLine->clear();
-    }
-    
+    }    
 }
 
+void ChatDialog::addNewPeerCommandline(QString fullAddress) {
+    int splitPos = fullAddress.indexOf(":");
+    if (splitPos == -1) {
+        qDebug() << "Wrong format for commandline argument!";
+        return;
+    }
+
+    QString address = fullAddress.left(splitPos);
+    QString portS = fullAddress.mid(splitPos + 1, fullAddress.length() - address.length() - 1);
+
+    QHostAddress hostAddress(address);
+    qDebug() << "Host address: " << hostAddress;
+
+
+    quint16 port = portS.toInt();
+    if (port == 0) {
+        qDebug() << "Invalid port!";
+        return;
+    }
+
+    if (hostAddress.isNull()) {
+        QHostInfo::lookupHost(address, this, SLOT(lookedUp(QHostInfo)));       
+    } else {
+        Peer newPeer(hostAddress, port);
+        peerList.push_back(newPeer);
+        addressLine->clear();
+        portLine->clear();
+    }      
+}
 
 void ChatDialog::lookedUp(QHostInfo host) {
     if (host.addresses().isEmpty()) {
@@ -430,6 +458,12 @@ int main(int argc, char **argv)
     ChatDialog *dialog = new ChatDialog();
     dialog->show();
 
+    QStringList arguments = QCoreApplication::arguments();
+    if (arguments.size() > 1) {
+        for (int i = 1; i < arguments.size(); i++) {
+            dialog->addNewPeerCommandline(arguments.at(i));
+        }
+    }
 
 	// Enter the Qt main loop; everything else is event driven
 	return app.exec();

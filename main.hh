@@ -57,7 +57,7 @@ public:
     void sendMessage(QString from, QString message, int position);
     void sendMessage(QString from, QString message, int position, Peer to);
 
-    void addNewPeer(QString address, QString port);
+    void addNewPeerCommandline(QString address);
 
 
 signals:
