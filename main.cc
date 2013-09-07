@@ -49,7 +49,7 @@ ChatDialog::ChatDialog()
 
     srand(time(0));
 
-    localhostName = "cm795:" + QString::number(rand() % 10000) + ":" + QString::number(sock->getCurrentPort());
+    localhostName = QHostInfo::localHostName() + "-" + QString::number(rand() % 10000) + ":" + QString::number(sock->getCurrentPort());
     //localhostName = QString::number(rand()) + ":" + QString::number(sock->getCurrentPort());
     localhost = new Peer(QHostAddress::LocalHost, sock->getCurrentPort());
 
@@ -130,6 +130,7 @@ void ChatDialog::discoverPeers() {
     for (int p = 0; p < peerPorts.size(); p++) { 
         Peer currentPeer(QHostAddress::LocalHost, peerPorts[p]);
         peerList.push_back(currentPeer);
+        peerTimers.push_back(new QTimer(this));
     }
 
 //    Peer michael(QHostAddress("128.36.232.49"), 37180);
@@ -137,6 +138,7 @@ void ChatDialog::discoverPeers() {
 }
 
 void ChatDialog::addNewPeerFromUI() {
+    qDebug() << "Enter add peer";
     QString address = addressLine->text();
     QString portS = portLine->text();
 
@@ -151,13 +153,17 @@ void ChatDialog::addNewPeerFromUI() {
     }
 
     if (hostAddress.isNull()) {
+        qDebug() << "Lookup host";
         QHostInfo::lookupHost(address, this, SLOT(lookedUp(QHostInfo)));       
     } else {
         Peer newPeer(hostAddress, port);
         peerList.push_back(newPeer);
+        peerTimers.push_back(new QTimer(this));
         addressLine->clear();
         portLine->clear();
-    }    
+    }
+
+    qDebug() << "Exit add peer";
 }
 
 void ChatDialog::addNewPeerCommandline(QString fullAddress) {
@@ -185,6 +191,7 @@ void ChatDialog::addNewPeerCommandline(QString fullAddress) {
     } else {
         Peer newPeer(hostAddress, port);
         peerList.push_back(newPeer);
+        peerTimers.push_back(new QTimer(this));
         addressLine->clear();
         portLine->clear();
     }      
@@ -267,8 +274,9 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
     srand(time(0));
 
     while (1) {
+        qDebug() << peerList.size();
         Peer randomPeer = peerList[rand() % peerList.size()];
-        // qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
+        qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
         sendMessage(from, message, position, randomPeer);
 
         if (rand() % 2 == 0)
@@ -284,7 +292,7 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
 
 void ChatDialog::sendStatus(Peer from) {
     QVariantMap status = createStatusMap(messages);
-    // qDebug() << localhostName << ":Sending status to " << from.hostAddress << ":" << from.port;
+    qDebug() << localhostName << ":Sending status to " << from.hostAddress << ":" << from.port;
     sendMessage(status, from);
 }
 
@@ -294,13 +302,15 @@ void ChatDialog::antiEntropySendStatus() {
     Peer randomPeer = peerList[rand() % peerList.size()];
     sendStatus(randomPeer);
 
-//    qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
+    qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
 }
 
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo) {
     int localSeqNo = messages[peerName].size() + 1; 
+    
+    qDebug() << localSeqNo << seqNo;
 
-    // qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+     qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
 
     // NEW MESSAGE! PROPAGAAAATE!!!
     if (seqNo == localSeqNo) {
@@ -331,8 +341,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         quint32 seqNo = textVariantMap[DEFAULT_SEQ_NO_KEY].toUInt();
 
         Peer currentPeer(sender, senderPort);
-        if (!peerList.contains(currentPeer))
+        if (!peerList.contains(currentPeer)) {
             peerList.push_back(currentPeer);
+            peerTimers.push_back(new QTimer(this));
+        }
 
         emit(gotNewMessage(currentPeer, originName, receivedText, seqNo)); 
 
@@ -351,15 +363,23 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         // actually 0 if he does the same, but I can't rely on that
 
         Peer currentPeer(sender, senderPort);
-        if (!peerList.contains(currentPeer))
+        if (!peerList.contains(currentPeer)) {
             peerList.push_back(currentPeer);
+            peerTimers.push_back(new QTimer(this));
+        }
 
-        // qDebug() << "Received status message from: " << sender << senderPort;
+        qDebug() << "Received status message from: " << sender << senderPort;
+
+
+        QVariantMap myStatus = createStatusMap(messages);
 
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
             QString gossipAboutName = it.key();
             int size = it.value().toInt();
+            qDebug() << gossipAboutName;
 
+            if (!messages.contains(gossipAboutName))
+                continue;
             if (messages[gossipAboutName].size() + 1 > size) { // I have more info than he does from this host, I'll send him message and quit
                 sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer);
                 return 0;
@@ -368,8 +388,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
 
         QMap<QString, QVector<QString> >::iterator it2;
         for (it2 = messages.begin(); it2 != messages.end(); ++it2) {
-            if (!wantMap.contains(it2.key()))
+            if (!wantMap.contains(it2.key())) {
                 sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer);
+                return 0;
+            }
         }
 
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
@@ -382,7 +404,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             }       
         }
 
-        return 2; // this means that my map and my peer's map are equal so I can flip the coin
+        return 0;
     }
 
     qDebug() << "Received bad map from: " << sender << " " << senderPort;

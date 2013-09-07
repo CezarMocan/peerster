@@ -11,6 +11,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QHostInfo>
+#include <QTimer>
 
 #include "netsocket.hh"
 #include "peer.hh"
@@ -62,6 +63,7 @@ public:
 
 signals:
     void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
+    void syncedWithPeer(Peer currentPeer);
 
 public slots:
 	void gotReturnPressed();
@@ -75,6 +77,7 @@ public slots:
 private:
     QString localStringName;
     QVector<Peer> peerList;
+    QVector<QTimer*> peerTimers;
     Peer *localhost;
     QString localhostName;
     NetSocket *sock;
