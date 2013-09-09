@@ -49,7 +49,7 @@ ChatDialog::ChatDialog()
 
     srand(time(0));
 
-    localhostName = QHostInfo::localHostName() + "-" + QString::number(rand() % 10000) + ":" + QString::number(sock->getCurrentPort());
+    localhostName = QHostInfo::localHostName() + "-" + QString::number(rand() % 1000000) + ":" + QString::number(sock->getCurrentPort());
     //localhostName = QString::number(rand()) + ":" + QString::number(sock->getCurrentPort());
     localhost = new Peer(QHostAddress::LocalHost, sock->getCurrentPort());
 
@@ -138,8 +138,8 @@ void ChatDialog::discoverPeers() {
 }
 
 void ChatDialog::addNewPeerFromUI() {
-    qDebug() << "Enter add peer";
     QString address = addressLine->text();
+    lastAddedPort = portLine->text();
     QString portS = portLine->text();
 
     QHostAddress hostAddress(address);
@@ -162,8 +162,6 @@ void ChatDialog::addNewPeerFromUI() {
         addressLine->clear();
         portLine->clear();
     }
-
-    qDebug() << "Exit add peer";
 }
 
 void ChatDialog::addNewPeerCommandline(QString fullAddress) {
@@ -175,6 +173,7 @@ void ChatDialog::addNewPeerCommandline(QString fullAddress) {
 
     QString address = fullAddress.left(splitPos);
     QString portS = fullAddress.mid(splitPos + 1, fullAddress.length() - address.length() - 1);
+    lastAddedPort = portS;
 
     QHostAddress hostAddress(address);
     qDebug() << "Host address: " << hostAddress;
@@ -203,9 +202,9 @@ void ChatDialog::lookedUp(QHostInfo host) {
         return;
     }
 
-    qDebug() << "New host: " << host.addresses().at(0) << portLine->text().toInt();
+    qDebug() << "New host: " << host.addresses().at(0) << lastAddedPort.toInt();
 
-    Peer newPeer(host.addresses().at(0), portLine->text().toInt());
+    Peer newPeer(host.addresses().at(0), lastAddedPort.toInt());
     peerList.push_back(newPeer);
 
     addressLine->clear();
@@ -257,14 +256,7 @@ void ChatDialog::gotReturnPressed()
 	// Insert some networking code here...
     QString message = textline->toPlainText();
 
-//	textview->append("[" + localhostName + "]: " + message); 
-
-    //messages[localhostName].push_back(message);
-
     emit(gotNewMessage(*localhost, localhostName, message, messages[localhostName].size() + 1));
-
-    //addReceivedMessage(*localhost, localhostName, message, messages[localhostName].size() + 1);
-    //sendMessage(localhostName, message, messages[localhostName].size());
 
 	// Clear the textline to get ready for the next input message.
 	textline->clear();
@@ -274,20 +266,13 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
     srand(time(0));
 
     while (1) {
-        qDebug() << peerList.size();
         Peer randomPeer = peerList[rand() % peerList.size()];
-        qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
+        //qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
         sendMessage(from, message, position, randomPeer);
 
         if (rand() % 2 == 0)
             return;
     }
-
-//    TODO: Implement the timer functionality here
-//    QTimer timer = new QTimer(this);
-//    timer->start(2000);
-//    connect(timer, SIGNAL(timeout()), this, SLOT(spreadRumor
-
 }
 
 void ChatDialog::sendStatus(Peer from) {
@@ -302,13 +287,13 @@ void ChatDialog::antiEntropySendStatus() {
     Peer randomPeer = peerList[rand() % peerList.size()];
     sendStatus(randomPeer);
 
-    qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
+    //qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
 }
 
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo) {
     int localSeqNo = messages[peerName].size() + 1; 
     
-    qDebug() << localSeqNo << seqNo;
+    //qDebug() << localSeqNo << seqNo;
 
      qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
 
@@ -378,8 +363,11 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             int size = it.value().toInt();
             qDebug() << gossipAboutName;
 
-            if (!messages.contains(gossipAboutName))
+            if (!messages.contains(gossipAboutName)) {
+                qDebug() << "Pula de castor";
                 continue;
+            }
+            qDebug() << messages[gossipAboutName].size() << size;
             if (messages[gossipAboutName].size() + 1 > size) { // I have more info than he does from this host, I'll send him message and quit
                 sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer);
                 return 0;
@@ -388,7 +376,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
 
         QMap<QString, QVector<QString> >::iterator it2;
         for (it2 = messages.begin(); it2 != messages.end(); ++it2) {
+            if (messages[it2.key()].size() == 0)
+                continue;
             if (!wantMap.contains(it2.key())) {
+                qDebug() << "Send him something not in the want map" << it2.key() << messages[it2.key()].size();
                 sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer);
                 return 0;
             }
@@ -398,6 +389,9 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             QString gossipAboutName = it.key();
             int size = it.value().toInt();
 
+            if (!messages.contains(it.key())) {
+                sendStatus(currentPeer);
+            }
             if (messages[gossipAboutName].size() + 1 < size) { // Peer has more info than I do, I'll send dat bitch a status map
                 sendStatus(currentPeer);
                 return 0;
@@ -422,29 +416,6 @@ void ChatDialog::receiveMessage() {
         
         parseMessage(datagram, sender, senderPort);
     }
-}
-
-void ChatDialog::receivedStatusFromPeer() { // create a variable in the class with the peer that i'm communicating with now
-
-/*
-    while (sock->hasPendingDatagrams()) {
-        QByteArray *datagram = new QByteArray();
-
-        datagram->resize(sock->pendingDatagramSize());
-        QHostAddress sender;
-        quint16 senderPort;
-
-        sock->readDatagram(datagram->data(), datagram->size(), &sender, &senderPort);
-
-        int type = parseMessage(datagram, sender, senderPort);
-
-        if (type == 1 && rumorPeer->hostAddress == sender && rumorPeer->port == senderPort) {
-            newStatusFlag = 1;
-            // exchange has already been made in parseMessage, here I just need to know if I received a status response back
-            // in order to know what's next in the rumormongering (
-        }
-    }
-*/    
 }
 
 void ChatDialog::printMap(QVariantMap map, QString hostName) {

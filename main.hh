@@ -68,7 +68,6 @@ signals:
 public slots:
 	void gotReturnPressed();
     void receiveMessage();
-    void receivedStatusFromPeer();
     void antiEntropySendStatus();
     int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
     void addNewPeerFromUI();
@@ -84,6 +83,7 @@ private:
     ReturnKeyFilter *returnKeyFilter;
 	QTextEdit *textview;
 	MultiLineEdit *textline;
+    QString lastAddedPort;
 
     QLineEdit *addressLine;
     QLabel *addressLabel;
