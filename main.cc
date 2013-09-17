@@ -1,4 +1,3 @@
-
 #include <unistd.h>
 #include <stdio.h>
 #include <math.h>
@@ -14,10 +13,6 @@
 
 #include "main.hh"
 
-const QString ChatDialog::DEFAULT_TEXT_KEY = QString("ChatText");
-const QString ChatDialog::DEFAULT_ORIGIN_KEY = QString("Origin");
-const QString ChatDialog::DEFAULT_SEQ_NO_KEY = QString("SeqNo");
-const QString ChatDialog::DEFAULT_WANT_KEY = QString("Want");
 const int ChatDialog::ANTI_ENTROPY_TIMER = 1000;
 
 bool ReturnKeyFilter::eventFilter(QObject *obj, QEvent *event) {
@@ -49,8 +44,7 @@ ChatDialog::ChatDialog()
 
     srand(time(0));
 
-    localhostName = QHostInfo::localHostName() + "-" + QString::number(rand() % 1000000) + ":" + QString::number(sock->getCurrentPort());
-    //localhostName = QString::number(rand()) + ":" + QString::number(sock->getCurrentPort());
+    localhostName = QHostInfo::localHostName() + "-" + QString::number(rand() % 1000000) + ":" + QString::number(sock->getCurrentPort());    
     localhost = new Peer(QHostAddress::LocalHost, sock->getCurrentPort());
 
     discoverPeers();
@@ -132,9 +126,6 @@ void ChatDialog::discoverPeers() {
         peerList.push_back(currentPeer);
         peerTimers.push_back(new QTimer(this));
     }
-
-//    Peer michael(QHostAddress("128.36.232.49"), 37180);
-//    peerList.push_back(michael);
 }
 
 void ChatDialog::addNewPeerFromUI() {
@@ -211,45 +202,6 @@ void ChatDialog::lookedUp(QHostInfo host) {
     portLine->clear();
 }
 
-
-QVariantMap ChatDialog::serializeMessage(QString fromName, QString text, int position) {
-    // Create the QVariantMap containing the message
-    QVariantMap textVariantMap;
-    textVariantMap.clear();
-    textVariantMap.insert(DEFAULT_TEXT_KEY, QVariant(text));
-    textVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(fromName));
-    textVariantMap.insert(DEFAULT_SEQ_NO_KEY, QVariant(position));
-
-    return textVariantMap;
-}
-
-QByteArray ChatDialog::serializeVariantMap(QVariantMap map) {
-    QByteArray *serializedMessage = new QByteArray();
-
-    QDataStream *serializer = new QDataStream(serializedMessage, QIODevice::WriteOnly);
-    (*serializer) << map;
-
-    return (*serializedMessage);
-}
-
-// Sends message to all peer list
-void ChatDialog::sendMessage(QString from, QString message, int position) {
-    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
-    sock->writeDatagramPeerList(&serializedMessage, peerList);
-}
-
-// Sends message only to specified peer
-void ChatDialog::sendMessage(QString from, QString message, int position, Peer to) {
-    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
-    sock->writeDatagramSinglePeer(&serializedMessage, to);
-}
-
-// Sends status message to specified peer
-void ChatDialog::sendMessage(QVariantMap status, Peer to) {
-    QByteArray serializedMessage = serializeVariantMap(status);
-    sock->writeDatagramSinglePeer(&serializedMessage, to);
-}
-
 void ChatDialog::gotReturnPressed()
 {
 	// Initially, just echo the string locally.
@@ -268,32 +220,24 @@ void ChatDialog::spreadRumor(QString from, QString message, int position) {
     while (1) {
         Peer randomPeer = peerList[rand() % peerList.size()];
         //qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
-        sendMessage(from, message, position, randomPeer);
+        sock->sendMessage(from, message, position, randomPeer);
 
         if (rand() % 2 == 0)
             return;
     }
 }
 
-void ChatDialog::sendStatus(Peer from) {
-    QVariantMap status = createStatusMap(messages);
-    qDebug() << localhostName << ":Sending status to " << from.hostAddress << ":" << from.port;
-    sendMessage(status, from);
-}
-
 void ChatDialog::antiEntropySendStatus() {
     srand(time(0));
 
     Peer randomPeer = peerList[rand() % peerList.size()];
-    sendStatus(randomPeer);
+    sock->sendStatus(randomPeer, messages);
 
     //qDebug() << localhostName << " Anti-entropy: sent status to " << randomPeer.hostAddress << randomPeer.port; 
 }
 
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo) {
-    int localSeqNo = messages[peerName].size() + 1; 
-    
-    //qDebug() << localSeqNo << seqNo;
+    int localSeqNo = messages[peerName].size() + 1;        
 
      qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
 
@@ -303,13 +247,13 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
         textview->append("[" + peerName + "]: " + message);
 
         // Send status to sender of this message
-        sendStatus(senderPeer);
+        sock->sendStatus(senderPeer, messages);
         spreadRumor(peerName, message, messages[peerName].size());
         return 0;
     } else if (seqNo < localSeqNo) {
         return 1; // This message has already been received
     } else { // It's bigger so I skipped a few messages; need to retrieve them first
-        sendStatus(senderPeer); // send a status map and start gossip with the sender, until I'm up to date
+        sock->sendStatus(senderPeer, messages); // send a status map and start gossip with the sender, until I'm up to date
         return -1;     
     }
 }
@@ -320,10 +264,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
     QDataStream *deserializer = new QDataStream(serializedMessage, QIODevice::ReadOnly);
     (*deserializer) >> textVariantMap;
 
-    if (textVariantMap.contains(DEFAULT_TEXT_KEY)) {
-        QString receivedText = textVariantMap[DEFAULT_TEXT_KEY].toString();
-        QString originName = textVariantMap[DEFAULT_ORIGIN_KEY].toString();
-        quint32 seqNo = textVariantMap[DEFAULT_SEQ_NO_KEY].toUInt();
+    if (textVariantMap.contains(sock->DEFAULT_TEXT_KEY)) {
+        QString receivedText = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
+        QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
+        quint32 seqNo = textVariantMap[sock->DEFAULT_SEQ_NO_KEY].toUInt();
 
         Peer currentPeer(sender, senderPort);
         if (!peerList.contains(currentPeer)) {
@@ -336,9 +280,9 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         return 0;
     }
 
-    if (textVariantMap.contains(DEFAULT_WANT_KEY)) {
+    if (textVariantMap.contains(sock->DEFAULT_WANT_KEY)) {
         // parse want map send stuff to the other machine
-        QVariantMap wantMap = textVariantMap[DEFAULT_WANT_KEY].toMap(); 
+        QVariantMap wantMap = textVariantMap[sock->DEFAULT_WANT_KEY].toMap();
         QVariantMap::iterator it;
 
         // Perform 2 iterations; in first one just check if I have anything new, send it if I do and return
@@ -356,7 +300,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         qDebug() << "Received status message from: " << sender << senderPort;
 
 
-        QVariantMap myStatus = createStatusMap(messages);
+        //QVariantMap myStatus = createStatusMap(messages);
 
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
             QString gossipAboutName = it.key();
@@ -369,7 +313,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             }
             qDebug() << messages[gossipAboutName].size() << size;
             if (messages[gossipAboutName].size() + 1 > size) { // I have more info than he does from this host, I'll send him message and quit
-                sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer);
+                sock->sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer);
                 return 0;
             }
         }
@@ -380,7 +324,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
                 continue;
             if (!wantMap.contains(it2.key())) {
                 qDebug() << "Send him something not in the want map" << it2.key() << messages[it2.key()].size();
-                sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer);
+                sock->sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer);
                 return 0;
             }
         }
@@ -390,10 +334,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             int size = it.value().toInt();
 
             if (!messages.contains(it.key())) {
-                sendStatus(currentPeer);
+                sock->sendStatus(currentPeer, messages);
             }
             if (messages[gossipAboutName].size() + 1 < size) { // Peer has more info than I do, I'll send dat bitch a status map
-                sendStatus(currentPeer);
+                sock->sendStatus(currentPeer, messages);
                 return 0;
             }       
         }
@@ -425,22 +369,6 @@ void ChatDialog::printMap(QVariantMap map, QString hostName) {
         qDebug() << "    " << it.key() << it.value();
     }
 }
-
-QVariantMap ChatDialog::createStatusMap(QMap<QString, QVector<QString> > messages) {
-    QVariantMap statusMap;
-    QMap<QString, QVector<QString> >::iterator it;
-    for (it = messages.begin(); it != messages.end(); ++it) {
-        statusMap.insert(it.key(), it.value().size() + 1);
-    }
-
-    QVariantMap returnMap;
-    returnMap.insert("Want", statusMap);
-
-    //printMap(statusMap, localhostName);
-
-    return returnMap;
-}
-
 
 int main(int argc, char **argv)
 {

@@ -4,6 +4,11 @@
 
 #include "netsocket.hh"
 
+const QString NetSocket::DEFAULT_TEXT_KEY = QString("ChatText");
+const QString NetSocket::DEFAULT_ORIGIN_KEY = QString("Origin");
+const QString NetSocket::DEFAULT_SEQ_NO_KEY = QString("SeqNo");
+const QString NetSocket::DEFAULT_WANT_KEY = QString("Want");
+
 NetSocket::NetSocket() {
 	// Pick a range of four UDP ports to try to allocate by default,
 	// computed based on my Unix user ID.
@@ -66,3 +71,63 @@ QVector<int> NetSocket::getLocalhostPorts() {
 int NetSocket::getCurrentPort() {
     return currentPort;
 }
+
+QVariantMap NetSocket::serializeMessage(QString fromName, QString text, int position) {
+    // Create the QVariantMap containing the message
+    QVariantMap textVariantMap;
+    textVariantMap.clear();
+    textVariantMap.insert(DEFAULT_TEXT_KEY, QVariant(text));
+    textVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(fromName));
+    textVariantMap.insert(DEFAULT_SEQ_NO_KEY, QVariant(position));
+
+    return textVariantMap;
+}
+
+QByteArray NetSocket::serializeVariantMap(QVariantMap map) {
+    QByteArray *serializedMessage = new QByteArray();
+
+    QDataStream *serializer = new QDataStream(serializedMessage, QIODevice::WriteOnly);
+    (*serializer) << map;
+
+    return (*serializedMessage);
+}
+
+// Sends message to all peer list
+void NetSocket::sendMessage(QString from, QString message, int position, QVector<Peer> peerList) {
+    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
+    writeDatagramPeerList(&serializedMessage, peerList);
+}
+
+// Sends message only to specified peer
+void NetSocket::sendMessage(QString from, QString message, int position, Peer to) {
+    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
+    writeDatagramSinglePeer(&serializedMessage, to);
+}
+
+// Sends status message to specified peer
+void NetSocket::sendMessage(QVariantMap status, Peer to) {
+    QByteArray serializedMessage = serializeVariantMap(status);
+    writeDatagramSinglePeer(&serializedMessage, to);
+}
+
+void NetSocket::sendStatus(Peer from, QMap<QString, QVector<QString> > messages) {
+    QVariantMap status = createStatusMap(messages);
+    sendMessage(status, from);
+}
+
+QVariantMap NetSocket::createStatusMap(QMap<QString, QVector<QString> > messages) {
+    QVariantMap statusMap;
+    QMap<QString, QVector<QString> >::iterator it;
+    for (it = messages.begin(); it != messages.end(); ++it) {
+        statusMap.insert(it.key(), it.value().size() + 1);
+    }
+
+    QVariantMap returnMap;
+    returnMap.insert("Want", statusMap);
+
+    //printMap(statusMap, localhostName);
+
+    return returnMap;
+}
+
+

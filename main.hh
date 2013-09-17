@@ -48,15 +48,7 @@ class ChatDialog : public QDialog
 	Q_OBJECT
 
 public:
-	ChatDialog();
-    QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
-
-    QVariantMap serializeMessage(QString from, QString text, int position);
-    QByteArray serializeVariantMap(QVariantMap map);
-
-    void sendMessage(QVariantMap status, Peer to);
-    void sendMessage(QString from, QString message, int position);
-    void sendMessage(QString from, QString message, int position, Peer to);
+	ChatDialog();    
 
     void addNewPeerCommandline(QString address);
 
@@ -95,18 +87,11 @@ private:
 
     QMap<QString, QVector<QString> > messages;
     
-
-    static const QString DEFAULT_TEXT_KEY;
-    static const QString DEFAULT_ORIGIN_KEY;
-    static const QString DEFAULT_SEQ_NO_KEY;
-    static const QString DEFAULT_WANT_KEY;
     static const int ANTI_ENTROPY_TIMER;
 
 
     void discoverPeers();
-    void spreadRumor(QString from, QString message, int position);
-    void sendStatus(Peer from);
-
+    void spreadRumor(QString from, QString message, int position);  
     void printMap(QVariantMap map, QString hostName);
     Peer peerLookupByAddress(QHostAddress address, quint16 port);
     int parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 port);
