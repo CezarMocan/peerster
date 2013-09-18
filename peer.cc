@@ -1,3 +1,5 @@
+#include <QString>
+
 #include "peer.hh"
 
 Peer::Peer() {
@@ -17,6 +19,11 @@ Peer::Peer(QHostAddress hostAddress, quint16 port) {
 
 bool Peer::operator< (const Peer& other) const {
     return (port < other.port);
+}
+
+QString Peer::toString() {
+    QString stringPeer = hostAddress.toString() + ":" + QString::number(port);
+    return stringPeer;
 }
 
 bool Peer::operator== (const Peer& other) const {

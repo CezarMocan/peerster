@@ -4,6 +4,8 @@
 
 #include "netsocket.hh"
 
+//172.27.35.120:34772
+
 const QString NetSocket::DEFAULT_TEXT_KEY = QString("ChatText");
 const QString NetSocket::DEFAULT_ORIGIN_KEY = QString("Origin");
 const QString NetSocket::DEFAULT_SEQ_NO_KEY = QString("SeqNo");
@@ -76,7 +78,8 @@ QVariantMap NetSocket::serializeMessage(QString fromName, QString text, int posi
     // Create the QVariantMap containing the message
     QVariantMap textVariantMap;
     textVariantMap.clear();
-    textVariantMap.insert(DEFAULT_TEXT_KEY, QVariant(text));
+    if (text != NULL)
+        textVariantMap.insert(DEFAULT_TEXT_KEY, QVariant(text));
     textVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(fromName));
     textVariantMap.insert(DEFAULT_SEQ_NO_KEY, QVariant(position));
 

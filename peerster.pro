@@ -15,3 +15,5 @@ HEADERS += main.hh \
 SOURCES += main.cc \
     netsocket.cc \
     peer.cc
+
+FORMS +=

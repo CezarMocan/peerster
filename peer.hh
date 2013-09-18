@@ -13,6 +13,8 @@ public:
     Peer(const Peer& peer);
     Peer(QHostAddress hostAddress, quint16 port);
 
+    QString toString();
+
     QHostAddress hostAddress;
     quint16 port;
 
