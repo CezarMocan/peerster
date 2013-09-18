@@ -15,25 +15,9 @@
 
 const int ChatDialog::ANTI_ENTROPY_FREQ = 5000;
 const int ChatDialog::ROUTE_MESSAGE_FREQ = 60000;
-
-bool ReturnKeyFilter::eventFilter(QObject *obj, QEvent *event) {
-    if (event->type() == QEvent::KeyPress) {
-        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-        if (keyEvent->key() == Qt::Key_Enter || keyEvent->key() == Qt::Key_Return) {
-            emit returnKeyPressedSignal();
-            return true;
-        }
-        else {
-            return QObject::eventFilter(obj, event);
-        }
-    } else {
-        return QObject::eventFilter(obj, event);
-    }
-}
-
-void MultiLineEdit::returnKeyPressedSlot() {
-    emit returnSignal();
-}
+const quint32 ChatDialog::HOP_LIMIT = 10;
+const quint32 ChatDialog::SEND_PRIVATE = 200000001;
+const quint32 ChatDialog::RECEIVE_PRIVATE = 200000002;
 
 ChatDialog::ChatDialog()
 {
@@ -54,22 +38,9 @@ ChatDialog::ChatDialog()
 	// This widget expands both horizontally and vertically.
 	textview = new QTextEdit(this);
 	textview->setReadOnly(true);
-
-	// Small text-entry box the user can enter messages.
-	// This widget normally expands only horizontally,
-	// leaving extra vertical space for the textview widget.
-	//
-	// You might change this into a read/write QTextEdit,
-	// so that the user can easily enter multi-line messages.
-	
-    returnKeyFilter = new ReturnKeyFilter();
+	    
     
     textline = new MultiLineEdit(this);
-    textline->installEventFilter(returnKeyFilter);
-
-    connect(returnKeyFilter, SIGNAL(returnKeyPressedSignal()),
-        textline, SLOT(returnKeyPressedSlot()));
-
 
     addressLine = new QLineEdit(this);
     addressLabel = new QLabel("Address", this);
@@ -81,6 +52,11 @@ ChatDialog::ChatDialog()
 
     peerview = new QTextEdit(this);
     peerview->setReadOnly(true);
+    peerviewLabel = new QLabel("Hosts", this);
+
+    peerNameList = new QListWidget(this);
+    connect(peerNameList, SIGNAL(itemActivated(QListWidgetItem*)), this, SLOT(peerClicked(QListWidgetItem*)));
+    peerNameListLabel = new QLabel("Peers", this);
 
     connect(addPeerButton, SIGNAL(clicked()), this, SLOT(addNewPeerFromUI()));
 
@@ -99,22 +75,22 @@ ChatDialog::ChatDialog()
     //layout->addItem(portLayout);
 
     QVBoxLayout *peerLayout = new QVBoxLayout();
-    peerLayout->addWidget(peerview);
-    peerLayout->addLayout(addressLayout, 0);
+    peerLayout->addWidget(peerNameListLabel, 1, Qt::AlignCenter);
+    peerLayout->addWidget(peerNameList, 15);
+    peerLayout->addWidget(peerviewLabel, 1, Qt::AlignCenter);
+    peerLayout->addWidget(peerview, 15);
+    peerLayout->addLayout(addressLayout, 1);
     peerLayout->addLayout(portLayout, 1);
-    peerLayout->addWidget(addPeerButton);
+    peerLayout->addWidget(addPeerButton, 2);
 
     QVBoxLayout *textLayout = new QVBoxLayout();
-    textLayout->addWidget(textview);
-    textLayout->addWidget(textline);
+    textLayout->addWidget(textview, 50);
+    textLayout->addWidget(textline, 10);
 
     QHBoxLayout *layout = new QHBoxLayout();
-    layout->addLayout(textLayout, 0);
+    layout->addLayout(textLayout, 2);
     layout->addLayout(peerLayout, 1);
-    layout->setStretchFactor(textLayout, 2);
-    layout->setStretchFactor(peerLayout, 1);
 
-    //layout->addWidget(addPeerButton);
 	setLayout(layout);
 
     // Set focus on the text box before, so the user doesn't have to do it
@@ -135,9 +111,39 @@ ChatDialog::ChatDialog()
     connect(routeMessageTimer, SIGNAL(timeout()), this, SLOT(sendRouteMessage()));
     routeMessageTimer->start(ROUTE_MESSAGE_FREQ);
 
-    connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32)), this, SLOT(addReceivedMessage(Peer, QString, QString, quint32)));
+    connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32, quint32)),
+            this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+
+    RECEIVED_MESSAGE_WINDOW = localhostName + " - Received private message";
+    privateChatMap[RECEIVED_MESSAGE_WINDOW] = new PrivateChatDialog(this, RECEIVED_MESSAGE_WINDOW, localhostName);
+    privateChatMap[RECEIVED_MESSAGE_WINDOW]->hide();
+    connect(this, SIGNAL(receivedPrivateMessage(QString, QString)),
+            privateChatMap[RECEIVED_MESSAGE_WINDOW], SLOT(addReceivedPrivateMessage(QString, QString)));
 
     sendRouteMessage();
+}
+
+void ChatDialog::createPrivateDialog(QString peerName) {
+    if (privateChatMap.contains(peerName)) {
+        if (privateChatMap[peerName] == NULL) {
+            privateChatMap[peerName] = new PrivateChatDialog(this, peerName, localhostName);
+            connect(privateChatMap[peerName], SIGNAL(privateChatSendMessage(Peer, QString, QString, quint32, quint32)),
+                    this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+        }
+    } else {
+        privateChatMap[peerName] = new PrivateChatDialog(this, peerName, localhostName);
+        connect(privateChatMap[peerName], SIGNAL(privateChatSendMessage(Peer, QString, QString, quint32, quint32)),
+                this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+    }
+
+    privateChatMap[peerName]->show();
+
+    qDebug() << "Create private dialog for" << peerName;
+    privateChatMap[peerName]->setFocus();
+}
+
+void ChatDialog::peerClicked(QListWidgetItem *item) {
+    createPrivateDialog(item->text());
 }
 
 void ChatDialog::discoverPeers() {
@@ -223,7 +229,7 @@ void ChatDialog::lookedUp(QHostInfo host) {
 void ChatDialog::gotReturnPressed()
 {
 	// Initially, just echo the string locally.
-	// Insert some networking code here...
+	// Insert some networking code here...    
     QString message = textline->toPlainText();
 
     emit(gotNewMessage(*localhost, localhostName, message, messages[localhostName].size() + 1));
@@ -256,35 +262,54 @@ void ChatDialog::antiEntropySendStatus() {
     sock->sendStatus(randomPeer, messages);    
 }
 
-int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo) {
-    int localSeqNo = messages[peerName].size() + 1;        
+int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 hopLimit) {
+    qDebug() << "Add received message" << seqNo;
+    if (seqNo != SEND_PRIVATE && seqNo != RECEIVE_PRIVATE) { // Gossip message case
+        int localSeqNo = messages[peerName].size() + 1;
+        qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+        // NEW MESSAGE! PROPAGAAAATE!!!
+        if (seqNo == localSeqNo) {
+            if (message != NULL) {
+                textview->append("[" + peerName + "]: " + message);
+            }
 
-     qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+            messages[peerName].push_back(message);
 
-    // NEW MESSAGE! PROPAGAAAATE!!!
-    if (seqNo == localSeqNo) {
-        if (message != NULL) {
-            textview->append("[" + peerName + "]: " + message);
+            // Add origin/sender to routing map
+            qDebug() << "Add received message: " << peerName << senderPeer.hostAddress << ":" << senderPeer.port;
+            if (!routingMap.contains(peerName))
+                peerNameList->addItem(peerName);
+            routingMap[peerName] = senderPeer;
+            printRoutingMap(routingMap);
+
+            // Send status to sender of this message
+            sock->sendStatus(senderPeer, messages);
+
+            // Rumormongering
+            spreadRumor(peerName, message, messages[peerName].size());
+            return 0;
+        } else if (seqNo < localSeqNo) {
+            return 1; // This message has already been received
+        } else { // It's bigger so I skipped a few messages; need to retrieve them first
+            sock->sendStatus(senderPeer, messages); // send a status map and start gossip with the sender, until I'm up to date
+            return -1;
         }
+    } else { // Private message case
+        // In this case seqNo serves as the type of operation
+        if (seqNo == SEND_PRIVATE) { // Sending a private message
+            if (!routingMap.contains(peerName)) {
+                qDebug() << "!!! TRYING TO SEND MESSAGE TO PEER NOT IN MAP WTF !!! Entering infinite loop";
+                //while (1);
+            }
+            qDebug() << "Private message sending: " << routingMap[peerName].hostAddress << routingMap[peerName].port;
 
-        messages[peerName].push_back(message);
-
-        // Add origin/sender to routing map
-        qDebug() << "Add received message: " << peerName << senderPeer.hostAddress << ":" << senderPeer.port;
-        routingMap[peerName] = senderPeer;
-        printRoutingMap(routingMap);
-
-        // Send status to sender of this message
-        sock->sendStatus(senderPeer, messages);
-
-        // Rumormongering
-        spreadRumor(peerName, message, messages[peerName].size());
-        return 0;
-    } else if (seqNo < localSeqNo) {
-        return 1; // This message has already been received
-    } else { // It's bigger so I skipped a few messages; need to retrieve them first
-        sock->sendStatus(senderPeer, messages); // send a status map and start gossip with the sender, until I'm up to date
-        return -1;     
+            sock->sendPrivateMessage(peerName, message, routingMap[peerName], HOP_LIMIT);
+        } else if (seqNo == RECEIVE_PRIVATE) { // Receiving a private message
+            emit(receivedPrivateMessage(RECEIVED_MESSAGE_WINDOW, message));
+        } else {
+            qDebug() << "seqNo is not SEND_PRIVATE or RECEIVE_PRIVATE for private message! Entering infinite loop";
+            while (1);
+        }
     }
 }
 
@@ -294,16 +319,16 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
     QDataStream *deserializer = new QDataStream(serializedMessage, QIODevice::ReadOnly);
     (*deserializer) >> textVariantMap;
 
-    if (textVariantMap.contains(sock->DEFAULT_ORIGIN_KEY)) {
+    Peer currentPeer(sender, senderPort);
+    addPeerToList(currentPeer);
+
+    if (textVariantMap.contains(sock->DEFAULT_ORIGIN_KEY)) { // Rumor chat or route message
         QString receivedText = NULL;
         if (textVariantMap.contains(sock->DEFAULT_TEXT_KEY))
             receivedText = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
 
         QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
         quint32 seqNo = textVariantMap[sock->DEFAULT_SEQ_NO_KEY].toUInt();
-
-        Peer currentPeer(sender, senderPort);
-        addPeerToList(currentPeer);
 
         emit(gotNewMessage(currentPeer, originName, receivedText, seqNo)); 
 
@@ -321,8 +346,6 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         // by doing this the chances of an infinite loop of status messages between me and my peer should be less
         // actually 0 if he does the same, but I can't rely on that
 
-        Peer currentPeer(sender, senderPort);
-        addPeerToList(currentPeer);
         //qDebug() << "Received status message from: " << sender << senderPort;
 
         for (it = wantMap.begin(); it != wantMap.end(); ++it) {
@@ -365,6 +388,26 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         }
 
         return 0;
+    }
+
+    if (textVariantMap.contains(sock->DEFAULT_DEST_KEY)) {
+        // Received private message
+        QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
+        QString message = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
+        quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
+
+        if (dest == localhostName) {
+            emit(gotNewMessage(currentPeer, dest, message, RECEIVE_PRIVATE, hopLimit));
+        } else {
+            // Drop a message if I'm not the destination and hopLimit got to be 0
+            if (hopLimit == 0)
+                return 0;
+            if (!routingMap.contains(dest)) {
+                qDebug() << "[Warning]: Received private message, but map entry for its destination is empty!!!";
+                return -1;
+            }
+            sock->sendPrivateMessage(dest, message, routingMap[dest], hopLimit);
+        }
     }
 
     qDebug() << "Received bad map from: " << sender << " " << senderPort;

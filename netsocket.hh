@@ -20,6 +20,10 @@ public:
     static const QString DEFAULT_ORIGIN_KEY;
     static const QString DEFAULT_SEQ_NO_KEY;
     static const QString DEFAULT_WANT_KEY;
+    static const QString DEFAULT_DEST_KEY;
+    static const QString DEFAULT_HOP_LIMIT_KEY;
+
+    static const quint32 HOP_LIMIT;
 
 	NetSocket();
 
@@ -33,6 +37,8 @@ public:
     void sendMessage(QString from, QString message, int position, QVector<Peer> peerList);
     void sendMessage(QString from, QString message, int position, Peer to);
 
+    void sendPrivateMessage(QString peerName, QString message, Peer firstHop, quint32 hopLimit);
+
     void sendStatus(Peer from, QMap<QString, QVector<QString> > messages);
 
     // Write current message to all ports on localhost
@@ -45,8 +51,8 @@ private:
 
     QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
     QVariantMap serializeMessage(QString from, QString text, int position);
-    QByteArray serializeVariantMap(QVariantMap map);
-
+    QVariantMap serializePrivateMessage(QString peerName, QString message, quint32 hopLimit);
+    QByteArray serializeVariantMap(QVariantMap map);    
 };
 
 #endif

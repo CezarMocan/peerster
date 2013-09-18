@@ -12,36 +12,12 @@
 #include <QLabel>
 #include <QHostInfo>
 #include <QTimer>
+#include <QListWidget>
 
 #include "netsocket.hh"
 #include "peer.hh"
-
-
-class MultiLineEdit : public QTextEdit 
-{
-    Q_OBJECT
-
-public: 
-    MultiLineEdit(QWidget *parent = 0) : QTextEdit(parent) {}
-
-signals:
-    void returnSignal();
-
-public slots:
-    void returnKeyPressedSlot();
-};
-
-class ReturnKeyFilter : public QObject 
-{
-    Q_OBJECT
-
-protected:
-    bool eventFilter(QObject *obj, QEvent *event);
-
-signals: 
-    void returnKeyPressedSignal();
-};
-
+#include "multilineedit.h"
+#include "privatechatdialog.h"
 
 class ChatDialog : public QDialog
 {
@@ -55,9 +31,17 @@ public:
     // Timer for how often to do rumor-mongering exchange
     static const int ANTI_ENTROPY_FREQ;
     static const int ROUTE_MESSAGE_FREQ;
+    static const quint32 HOP_LIMIT;
+    static const quint32 SEND_PRIVATE;
+    static const quint32 RECEIVE_PRIVATE;
+
+    // Localhost info
+    Peer *localhost;
+    QString localhostName;
 
 signals:
-    void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);    
+    void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
+    void receivedPrivateMessage(QString peerName, QString message);
 
 public slots:
     // Slot for UI - what to do when Return key is pressed
@@ -78,14 +62,11 @@ public slots:
     void lookedUp(QHostInfo host);
 
     // Slot called every time a new message is received / generated
-    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo);
+    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
+
+    void peerClicked(QListWidgetItem *item);
 
 private:
-
-    // Localhost info
-    Peer *localhost;
-    QString localhostName;
-
     // Network socket for communicating with the other clients
     NetSocket *sock;
 
@@ -100,8 +81,10 @@ private:
     QPushButton *addPeerButton;
     QTextEdit *textview;
     MultiLineEdit *textline;
-    ReturnKeyFilter *returnKeyFilter;
     QTextEdit *peerview;
+    QLabel *peerviewLabel;
+    QListWidget *peerNameList;
+    QLabel *peerNameListLabel;
 
     // Messages by Origin name
     QMap<QString, QVector<QString> > messages;
@@ -112,6 +95,14 @@ private:
 
     // Routing map: name->peer
     QMap<QString, Peer> routingMap;
+
+    // Map of peer names to their corresponding UI private chat windows
+    QMap<QString, PrivateChatDialog*> privateChatMap;
+
+    QString RECEIVED_MESSAGE_WINDOW;
+
+    // Create a new window for this peer, if there isn't already one
+    void createPrivateDialog(QString peerName);
 
     // Add peer to peer list and UI list
     void addPeerToList(Peer peer);

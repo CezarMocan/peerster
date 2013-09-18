@@ -11,9 +11,13 @@ QT += network
 # Input
 HEADERS += main.hh \
     netsocket.hh \
-    peer.hh
+    peer.hh \
+    privatechatdialog.h \
+    multilineedit.h
 SOURCES += main.cc \
     netsocket.cc \
-    peer.cc
+    peer.cc \
+    privatechatdialog.cpp \
+    multilineedit.cpp
 
 FORMS +=
