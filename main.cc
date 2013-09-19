@@ -14,7 +14,7 @@
 #include "main.hh"
 
 const int ChatDialog::ANTI_ENTROPY_FREQ = 1000;
-const int ChatDialog::ROUTE_MESSAGE_FREQ = 10000;
+const int ChatDialog::ROUTE_MESSAGE_FREQ = 1000;
 const quint32 ChatDialog::HOP_LIMIT = 10;
 const quint32 ChatDialog::SEND_PRIVATE = 200000001;
 const quint32 ChatDialog::RECEIVE_PRIVATE = 200000002;
@@ -273,12 +273,14 @@ void ChatDialog::antiEntropySendStatus() {
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 hopLimit) {
     qDebug() << "Add received message" << seqNo;
     if (seqNo != SEND_PRIVATE && seqNo != RECEIVE_PRIVATE) { // Gossip message case
-        int localSeqNo = messages[peerName].size() + 1;
-        qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+        int localSeqNo = messages[peerName].size() + 1;        
         // NEW MESSAGE! PROPAGAAAATE!!!
         if (seqNo == localSeqNo) {
             if (message != NULL) {
                 textview->append("[" + peerName + "]: " + message);
+                qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+            } else {
+                qDebug() << localhostName << " Received routing from: " << senderPeer.hostAddress << ":" << senderPeer.port << seqNo << localSeqNo;
             }
 
             messages[peerName].push_back(message);
@@ -438,9 +440,12 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             else
                 sock->sendPrivateMessage(originName, dest, message, routingMap[dest], hopLimit);
         }
+
+        return 0;
     }
 
     qDebug() << "Received bad map from: " << sender << " " << senderPort;
+    printMap(textVariantMap, "bad_map_guy");
     return -1;
 }
 
