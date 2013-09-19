@@ -14,7 +14,7 @@
 #include "main.hh"
 
 const int ChatDialog::ANTI_ENTROPY_FREQ = 1000;
-const int ChatDialog::ROUTE_MESSAGE_FREQ = 60000;
+const int ChatDialog::ROUTE_MESSAGE_FREQ = 10000;
 const quint32 ChatDialog::HOP_LIMIT = 10;
 const quint32 ChatDialog::SEND_PRIVATE = 200000001;
 const quint32 ChatDialog::RECEIVE_PRIVATE = 200000002;
