@@ -49,7 +49,7 @@ void PrivateChatDialog::buttonClicked() {
 
 void PrivateChatDialog::addReceivedPrivateMessage(QString peerName, QString message) {
     if (peerName != this->peerName) {
-        qDebug() << "PrivateChatDialog: peer names do not match";
+        qDebug() << "PrivateChatDialog: peer names do not match" << peerName << this->peerName;
         return;
     }
     textview->append("[" + peerName + "]: " + message);

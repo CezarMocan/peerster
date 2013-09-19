@@ -101,19 +101,21 @@ void NetSocket::sendMessage(QVariantMap status, Peer to) {
     writeDatagramSinglePeer(&serializedMessage, to);
 }
 
-QVariantMap NetSocket::serializePrivateMessage(QString peerName, QString message, quint32 hopLimit) {
+QVariantMap NetSocket::serializePrivateMessage(QString originName, QString peerName, QString message, quint32 hopLimit) {
     // Create the QVariantMap containing the message
     QVariantMap textVariantMap;
     textVariantMap.clear();
     textVariantMap.insert(DEFAULT_DEST_KEY, QVariant(peerName));
     textVariantMap.insert(DEFAULT_TEXT_KEY, QVariant(message));
     textVariantMap.insert(DEFAULT_HOP_LIMIT_KEY, QVariant(hopLimit));
+    if (originName != NULL)
+        textVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(originName));
 
     return textVariantMap;
 }
 
-void NetSocket::sendPrivateMessage(QString peerName, QString message, Peer firstHop, quint32 hopLimit) {
-    QByteArray serializedMessage = serializeVariantMap(serializePrivateMessage(peerName, message, hopLimit));
+void NetSocket::sendPrivateMessage(QString originName, QString peerName, QString message, Peer firstHop, quint32 hopLimit) {
+    QByteArray serializedMessage = serializeVariantMap(serializePrivateMessage(originName, peerName, message, hopLimit));
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 

@@ -13,7 +13,7 @@
 
 #include "main.hh"
 
-const int ChatDialog::ANTI_ENTROPY_FREQ = 5000;
+const int ChatDialog::ANTI_ENTROPY_FREQ = 1000;
 const int ChatDialog::ROUTE_MESSAGE_FREQ = 60000;
 const quint32 ChatDialog::HOP_LIMIT = 10;
 const quint32 ChatDialog::SEND_PRIVATE = 200000001;
@@ -114,11 +114,11 @@ ChatDialog::ChatDialog()
     connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32, quint32)),
             this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
 
-    RECEIVED_MESSAGE_WINDOW = localhostName + " - Received private message";
-    privateChatMap[RECEIVED_MESSAGE_WINDOW] = new PrivateChatDialog(this, RECEIVED_MESSAGE_WINDOW, localhostName);
-    privateChatMap[RECEIVED_MESSAGE_WINDOW]->hide();
-    connect(this, SIGNAL(receivedPrivateMessage(QString, QString)),
-            privateChatMap[RECEIVED_MESSAGE_WINDOW], SLOT(addReceivedPrivateMessage(QString, QString)));
+    RECEIVED_MESSAGE_WINDOW = "Anonymus";
+//    privateChatMap[RECEIVED_MESSAGE_WINDOW] = new PrivateChatDialog(this, RECEIVED_MESSAGE_WINDOW, localhostName);
+//    privateChatMap[RECEIVED_MESSAGE_WINDOW]->hide();
+//    connect(this, SIGNAL(receivedPrivateMessage(QString, QString)),
+//            privateChatMap[RECEIVED_MESSAGE_WINDOW], SLOT(addReceivedPrivateMessage(QString, QString)));
 
     sendRouteMessage();
 }
@@ -129,17 +129,23 @@ void ChatDialog::createPrivateDialog(QString peerName) {
             privateChatMap[peerName] = new PrivateChatDialog(this, peerName, localhostName);
             connect(privateChatMap[peerName], SIGNAL(privateChatSendMessage(Peer, QString, QString, quint32, quint32)),
                     this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+            connect(this, SIGNAL(receivedPrivateMessage(QString, QString)),
+                    privateChatMap[peerName], SLOT(addReceivedPrivateMessage(QString, QString)));
+        } else {
+            privateChatMap[peerName]->show();
         }
     } else {
         privateChatMap[peerName] = new PrivateChatDialog(this, peerName, localhostName);
         connect(privateChatMap[peerName], SIGNAL(privateChatSendMessage(Peer, QString, QString, quint32, quint32)),
                 this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+        connect(this, SIGNAL(receivedPrivateMessage(QString, QString)),
+                privateChatMap[peerName], SLOT(addReceivedPrivateMessage(QString, QString)));
     }
 
     privateChatMap[peerName]->show();
+    privateChatMap[peerName]->setFocus();
 
     qDebug() << "Create private dialog for" << peerName;
-    privateChatMap[peerName]->setFocus();
 }
 
 void ChatDialog::peerClicked(QListWidgetItem *item) {
@@ -303,9 +309,11 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
             }
             qDebug() << "Private message sending: " << routingMap[peerName].hostAddress << routingMap[peerName].port;
 
-            sock->sendPrivateMessage(peerName, message, routingMap[peerName], HOP_LIMIT);
+            sock->sendPrivateMessage(localhostName, peerName, message, routingMap[peerName], HOP_LIMIT);
         } else if (seqNo == RECEIVE_PRIVATE) { // Receiving a private message
-            emit(receivedPrivateMessage(RECEIVED_MESSAGE_WINDOW, message));
+            qDebug() << "Add received message peer name:" << peerName;
+            createPrivateDialog(peerName);
+            emit(receivedPrivateMessage(peerName, message));
         } else {
             qDebug() << "seqNo is not SEND_PRIVATE or RECEIVE_PRIVATE for private message! Entering infinite loop";
             while (1);
@@ -322,7 +330,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
     Peer currentPeer(sender, senderPort);
     addPeerToList(currentPeer);
 
-    if (textVariantMap.contains(sock->DEFAULT_ORIGIN_KEY)) { // Rumor chat or route message
+    if (textVariantMap.contains(sock->DEFAULT_SEQ_NO_KEY)) { // Rumor chat or route message
         QString receivedText = NULL;
         if (textVariantMap.contains(sock->DEFAULT_TEXT_KEY))
             receivedText = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
@@ -395,9 +403,14 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
         QString message = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
         quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
+        QString originName = RECEIVED_MESSAGE_WINDOW;
+        if (textVariantMap.contains(sock->DEFAULT_ORIGIN_KEY))
+            originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
+
+        qDebug() << "Received private message from: " << originName;
 
         if (dest == localhostName) {
-            emit(gotNewMessage(currentPeer, dest, message, RECEIVE_PRIVATE, hopLimit));
+            emit(gotNewMessage(currentPeer, originName, message, RECEIVE_PRIVATE, hopLimit));
         } else {
             // Drop a message if I'm not the destination and hopLimit got to be 0
             if (hopLimit == 0)
@@ -406,7 +419,11 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
                 qDebug() << "[Warning]: Received private message, but map entry for its destination is empty!!!";
                 return -1;
             }
-            sock->sendPrivateMessage(dest, message, routingMap[dest], hopLimit);
+
+            if (originName == RECEIVED_MESSAGE_WINDOW)
+                sock->sendPrivateMessage(NULL, dest, message, routingMap[dest], hopLimit);
+            else
+                sock->sendPrivateMessage(originName, dest, message, routingMap[dest], hopLimit);
         }
     }
 

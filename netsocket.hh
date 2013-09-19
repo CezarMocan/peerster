@@ -37,7 +37,7 @@ public:
     void sendMessage(QString from, QString message, int position, QVector<Peer> peerList);
     void sendMessage(QString from, QString message, int position, Peer to);
 
-    void sendPrivateMessage(QString peerName, QString message, Peer firstHop, quint32 hopLimit);
+    void sendPrivateMessage(QString originName, QString peerName, QString message, Peer firstHop, quint32 hopLimit);
 
     void sendStatus(Peer from, QMap<QString, QVector<QString> > messages);
 
@@ -51,7 +51,7 @@ private:
 
     QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
     QVariantMap serializeMessage(QString from, QString text, int position);
-    QVariantMap serializePrivateMessage(QString peerName, QString message, quint32 hopLimit);
+    QVariantMap serializePrivateMessage(QString originName, QString peerName, QString message, quint32 hopLimit);
     QByteArray serializeVariantMap(QVariantMap map);    
 };
 
