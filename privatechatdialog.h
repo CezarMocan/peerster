@@ -13,7 +13,7 @@ class PrivateChatDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit PrivateChatDialog(QWidget *parent = 0, QString peerName = "", QString localhostName = "");
+    PrivateChatDialog(QWidget *parent = 0, QString peerName = "", QString localhostName = "");
 
 private:
     QString peerName;
