@@ -13,8 +13,8 @@
 
 #include "main.hh"
 
-const int ChatDialog::ANTI_ENTROPY_FREQ = 1000;
-const int ChatDialog::ROUTE_MESSAGE_FREQ = 1000;
+const int ChatDialog::ANTI_ENTROPY_FREQ = 2000;
+const int ChatDialog::ROUTE_MESSAGE_FREQ = 10000;
 const quint32 ChatDialog::HOP_LIMIT = 10;
 const quint32 ChatDialog::SEND_PRIVATE = 200000001;
 const quint32 ChatDialog::RECEIVE_PRIVATE = 200000002;
@@ -271,22 +271,22 @@ void ChatDialog::antiEntropySendStatus() {
 }
 
 int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 hopLimit) {
-    qDebug() << "Add received message" << seqNo;
+    //qDebug() << "Add received message" << seqNo;
     if (seqNo != SEND_PRIVATE && seqNo != RECEIVE_PRIVATE) { // Gossip message case
         int localSeqNo = messages[peerName].size() + 1;        
         // NEW MESSAGE! PROPAGAAAATE!!!
         if (seqNo == localSeqNo) {
             if (message != NULL) {
                 textview->append("[" + peerName + "]: " + message);
-                qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
+                //qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
             } else {
-                qDebug() << localhostName << " Received routing from: " << senderPeer.hostAddress << ":" << senderPeer.port << seqNo << localSeqNo;
+                //qDebug() << localhostName << " Received routing from: " << senderPeer.hostAddress << ":" << senderPeer.port << seqNo << localSeqNo;
             }
 
             messages[peerName].push_back(message);
 
             // Add origin/sender to routing map
-            qDebug() << "Add received message: " << peerName << senderPeer.hostAddress << ":" << senderPeer.port;
+            //qDebug() << "Add received message: " << peerName << senderPeer.hostAddress << ":" << senderPeer.port;
             if (!routingMap.contains(peerName))
                 peerNameList->addItem(peerName);
             routingMap[peerName] = senderPeer;
@@ -377,7 +377,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             //qDebug() << gossipAboutName;
 
             if (!messages.contains(gossipAboutName)) {
-                qDebug() << "Pula de castor";
+                //qDebug() << "Pula de castor";
                 continue;
             }
             //qDebug() << messages[gossipAboutName].size() << size;
