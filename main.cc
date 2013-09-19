@@ -333,6 +333,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
     addPeerToList(currentPeer);
 
     if (textVariantMap.contains(sock->DEFAULT_SEQ_NO_KEY)) { // Rumor chat or route message
+        qDebug() << "Received rumor: " << sender << senderPort;
         quint32 lastIp;
         quint16 lastPort;
         QString receivedText = NULL;
@@ -342,10 +343,10 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         if (textVariantMap.contains(sock->DEFAULT_LAST_IP_KEY)) {
             lastIp = textVariantMap[sock->DEFAULT_LAST_IP_KEY].toUInt();
             lastPort = textVariantMap[sock->DEFAULT_LAST_PORT_KEY].toUInt();
+            Peer lastPeer(QHostAddress(lastIp), lastPort);
+            addPeerToList(lastPeer);
+            qDebug() << "Last peer:" << lastIp << lastPort;
         }
-
-        Peer *lastPeer = new Peer(QHostAddress(lastIp), lastPort);
-        addPeerToList(*lastPeer);
 
         QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
         quint32 seqNo = textVariantMap[sock->DEFAULT_SEQ_NO_KEY].toUInt();
