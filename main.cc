@@ -246,13 +246,13 @@ void ChatDialog::gotReturnPressed()
 	textline->clear();
 }
 
-void ChatDialog::spreadRumor(QString from, QString message, int position) {
+void ChatDialog::spreadRumor(Peer previous, QString from, QString message, int position) {
     srand(time(0));
 
     while (1) {
         Peer randomPeer = peerList[rand() % peerList.size()];
         //qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
-        sock->sendMessage(from, message, position, randomPeer);
+        sock->sendMessage(from, message, position, randomPeer, previous.hostAddress.toIPv4Address(), previous.port);
 
         if (rand() % 2 == 0)
             return;
@@ -294,7 +294,7 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
             sock->sendStatus(senderPeer, messages);
 
             // Rumormongering
-            spreadRumor(peerName, message, messages[peerName].size());
+            spreadRumor(senderPeer, peerName, message, messages[peerName].size());
             return 0;
         } else if (seqNo < localSeqNo) {
             return 1; // This message has already been received
@@ -333,9 +333,19 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
     addPeerToList(currentPeer);
 
     if (textVariantMap.contains(sock->DEFAULT_SEQ_NO_KEY)) { // Rumor chat or route message
+        quint32 lastIp;
+        quint16 lastPort;
         QString receivedText = NULL;
         if (textVariantMap.contains(sock->DEFAULT_TEXT_KEY))
             receivedText = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
+
+        if (textVariantMap.contains(sock->DEFAULT_LAST_IP_KEY)) {
+            lastIp = textVariantMap[sock->DEFAULT_LAST_IP_KEY].toUInt();
+            lastPort = textVariantMap[sock->DEFAULT_LAST_PORT_KEY].toUInt();
+        }
+
+        Peer *lastPeer = new Peer(QHostAddress(lastIp), lastPort);
+        addPeerToList(*lastPeer);
 
         QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
         quint32 seqNo = textVariantMap[sock->DEFAULT_SEQ_NO_KEY].toUInt();
@@ -369,7 +379,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             }
             //qDebug() << messages[gossipAboutName].size() << size;
             if (messages[gossipAboutName].size() + 1 > size) { // I have more info than he does from this host, I'll send him message and quit
-                sock->sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer);
+                sock->sendMessage(gossipAboutName, messages[gossipAboutName][size - 1], size, currentPeer, 0, 0);
                 return 0;
             }
         }
@@ -379,7 +389,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             if (messages[it2.key()].size() == 0)
                 continue;
             if (!wantMap.contains(it2.key())) {                
-                sock->sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer);
+                sock->sendMessage(it2.key(), messages[it2.key()][0], 1, currentPeer, 0, 0);
                 return 0;
             }
         }

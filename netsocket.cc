@@ -12,6 +12,9 @@ const QString NetSocket::DEFAULT_SEQ_NO_KEY = QString("SeqNo");
 const QString NetSocket::DEFAULT_WANT_KEY = QString("Want");
 const QString NetSocket::DEFAULT_DEST_KEY = QString("Dest");
 const QString NetSocket::DEFAULT_HOP_LIMIT_KEY = QString("HopLimit");
+const QString NetSocket::DEFAULT_LAST_IP_KEY = QString("LastIP");
+const QString NetSocket::DEFAULT_LAST_PORT_KEY = QString("LastPort");
+
 
 NetSocket::NetSocket(bool noForwardFlag) {
 	// Pick a range of four UDP ports to try to allocate by default,
@@ -63,7 +66,7 @@ int NetSocket::getCurrentPort() {
     return currentPort;
 }
 
-QVariantMap NetSocket::serializeMessage(QString fromName, QString text, int position) {
+QVariantMap NetSocket::serializeMessage(QString fromName, QString text, int position, quint32 lastIp, quint16 lastPort) {
     // Create the QVariantMap containing the message
     QVariantMap textVariantMap;
     textVariantMap.clear();
@@ -71,6 +74,10 @@ QVariantMap NetSocket::serializeMessage(QString fromName, QString text, int posi
         textVariantMap.insert(DEFAULT_TEXT_KEY, QVariant(text));
     textVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(fromName));
     textVariantMap.insert(DEFAULT_SEQ_NO_KEY, QVariant(position));
+    if (lastIp != 0 && lastPort != 0) {
+        textVariantMap.insert(DEFAULT_LAST_IP_KEY, QVariant(lastIp));
+        textVariantMap.insert(DEFAULT_LAST_PORT_KEY, QVariant(lastPort));
+    }
 
     return textVariantMap;
 }
@@ -101,15 +108,15 @@ QByteArray NetSocket::serializeVariantMap(QVariantMap map) {
 void NetSocket::sendMessage(QString from, QString message, int position, QVector<Peer> peerList) {
     if (noForwardFlag && message != NULL)
         return;
-    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
+    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position, 0, 0));
     writeDatagramPeerList(&serializedMessage, peerList);
 }
 
 // Sends message only to specified peer
-void NetSocket::sendMessage(QString from, QString message, int position, Peer to) {
+void NetSocket::sendMessage(QString from, QString message, int position, Peer to, quint32 lastIp, quint16 lastPort) {
     if (noForwardFlag && message != NULL)
         return;
-    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
+    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position, lastIp, lastPort));
     writeDatagramSinglePeer(&serializedMessage, to);
 }
 

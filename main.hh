@@ -118,7 +118,7 @@ private:
     void discoverPeers();
 
     // Rumormongering
-    void spreadRumor(QString from, QString message, int position);  
+    void spreadRumor(Peer previous, QString from, QString message, int position);
 
     // Print different kinds of maps - debug purposes
     void printMap(QVariantMap map, QString hostName);

@@ -22,6 +22,8 @@ public:
     static const QString DEFAULT_WANT_KEY;
     static const QString DEFAULT_DEST_KEY;
     static const QString DEFAULT_HOP_LIMIT_KEY;
+    static const QString DEFAULT_LAST_IP_KEY;
+    static const QString DEFAULT_LAST_PORT_KEY;
 
     static const quint32 HOP_LIMIT;
 
@@ -35,7 +37,7 @@ public:
 
     void sendMessage(QVariantMap status, Peer to);
     void sendMessage(QString from, QString message, int position, QVector<Peer> peerList);
-    void sendMessage(QString from, QString message, int position, Peer to);
+    void sendMessage(QString from, QString message, int position, Peer to, quint32 lastIp, quint16 lastPort);
 
     void sendPrivateMessage(QString originName, QString peerName, QString message, Peer firstHop, quint32 hopLimit);
 
@@ -51,7 +53,7 @@ private:
     bool noForwardFlag;
 
     QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
-    QVariantMap serializeMessage(QString from, QString text, int position);
+    QVariantMap serializeMessage(QString from, QString text, int position, quint32 lastIp, quint16 lastPort);
     QVariantMap serializePrivateMessage(QString originName, QString peerName, QString message, quint32 hopLimit);
     QByteArray serializeVariantMap(QVariantMap map);    
 };
