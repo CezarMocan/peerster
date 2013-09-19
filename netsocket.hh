@@ -25,7 +25,7 @@ public:
 
     static const quint32 HOP_LIMIT;
 
-	NetSocket();
+    NetSocket(bool noForwardFlag = 0);
 
 	// Bind this socket to a Peerster-specific default port.
 	bool bind();
@@ -48,6 +48,7 @@ public:
 private:
 	int myPortMin, myPortMax;
     int currentPort;
+    bool noForwardFlag;
 
     QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
     QVariantMap serializeMessage(QString from, QString text, int position);

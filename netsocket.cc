@@ -13,7 +13,7 @@ const QString NetSocket::DEFAULT_WANT_KEY = QString("Want");
 const QString NetSocket::DEFAULT_DEST_KEY = QString("Dest");
 const QString NetSocket::DEFAULT_HOP_LIMIT_KEY = QString("HopLimit");
 
-NetSocket::NetSocket() {
+NetSocket::NetSocket(bool noForwardFlag) {
 	// Pick a range of four UDP ports to try to allocate by default,
 	// computed based on my Unix user ID.
 	// This makes it trivial for up to four Peerster instances per user
@@ -24,6 +24,7 @@ NetSocket::NetSocket() {
 	myPortMin = 32768 + (getuid() % 4096)*4;
 	myPortMax = myPortMin + 3;
     currentPort = -1;
+    this->noForwardFlag = noForwardFlag;
 }
 
 bool NetSocket::bind() {
@@ -74,33 +75,6 @@ QVariantMap NetSocket::serializeMessage(QString fromName, QString text, int posi
     return textVariantMap;
 }
 
-QByteArray NetSocket::serializeVariantMap(QVariantMap map) {
-    QByteArray *serializedMessage = new QByteArray();
-
-    QDataStream *serializer = new QDataStream(serializedMessage, QIODevice::WriteOnly);
-    (*serializer) << map;
-
-    return (*serializedMessage);
-}
-
-// Sends message to all peer list
-void NetSocket::sendMessage(QString from, QString message, int position, QVector<Peer> peerList) {
-    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
-    writeDatagramPeerList(&serializedMessage, peerList);
-}
-
-// Sends message only to specified peer
-void NetSocket::sendMessage(QString from, QString message, int position, Peer to) {
-    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
-    writeDatagramSinglePeer(&serializedMessage, to);
-}
-
-// Sends status message to specified peer
-void NetSocket::sendMessage(QVariantMap status, Peer to) {
-    QByteArray serializedMessage = serializeVariantMap(status);
-    writeDatagramSinglePeer(&serializedMessage, to);
-}
-
 QVariantMap NetSocket::serializePrivateMessage(QString originName, QString peerName, QString message, quint32 hopLimit) {
     // Create the QVariantMap containing the message
     QVariantMap textVariantMap;
@@ -114,7 +88,40 @@ QVariantMap NetSocket::serializePrivateMessage(QString originName, QString peerN
     return textVariantMap;
 }
 
+QByteArray NetSocket::serializeVariantMap(QVariantMap map) {
+    QByteArray *serializedMessage = new QByteArray();
+
+    QDataStream *serializer = new QDataStream(serializedMessage, QIODevice::WriteOnly);
+    (*serializer) << map;
+
+    return (*serializedMessage);
+}
+
+// Sends message to all peer list
+void NetSocket::sendMessage(QString from, QString message, int position, QVector<Peer> peerList) {
+    if (noForwardFlag && message != NULL)
+        return;
+    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
+    writeDatagramPeerList(&serializedMessage, peerList);
+}
+
+// Sends message only to specified peer
+void NetSocket::sendMessage(QString from, QString message, int position, Peer to) {
+    if (noForwardFlag && message != NULL)
+        return;
+    QByteArray serializedMessage = serializeVariantMap(serializeMessage(from, message, position));
+    writeDatagramSinglePeer(&serializedMessage, to);
+}
+
+// Sends status message to specified peer
+void NetSocket::sendMessage(QVariantMap status, Peer to) {
+    QByteArray serializedMessage = serializeVariantMap(status);
+    writeDatagramSinglePeer(&serializedMessage, to);
+}
+
 void NetSocket::sendPrivateMessage(QString originName, QString peerName, QString message, Peer firstHop, quint32 hopLimit) {
+    if (noForwardFlag && message != NULL)
+        return;
     QByteArray serializedMessage = serializeVariantMap(serializePrivateMessage(originName, peerName, message, hopLimit));
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }

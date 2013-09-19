@@ -19,9 +19,10 @@ const quint32 ChatDialog::HOP_LIMIT = 10;
 const quint32 ChatDialog::SEND_PRIVATE = 200000001;
 const quint32 ChatDialog::RECEIVE_PRIVATE = 200000002;
 
-ChatDialog::ChatDialog()
+ChatDialog::ChatDialog(bool noForwardFlag)
 {
-    sock = new NetSocket();
+    this->noForwardFlag = noForwardFlag;
+    sock = new NetSocket(noForwardFlag);
     if (!sock->bind())
         exit(1);
 
@@ -183,7 +184,8 @@ void ChatDialog::addNewPeerFromUI() {
 void ChatDialog::addNewPeerCommandline(QString fullAddress) {
     int splitPos = fullAddress.indexOf(":");
     if (splitPos == -1) {
-        qDebug() << "Wrong format for commandline argument!";
+        if (fullAddress != "-noforward")
+            qDebug() << "Wrong format for commandline argument!";
         return;
     }
 
@@ -466,10 +468,17 @@ int main(int argc, char **argv)
 	QApplication app(argc,argv);
 
     // Show initial chat dialog window
-    ChatDialog *dialog = new ChatDialog();
+
+    bool noForwardFlag = 0;
+    QStringList arguments = QCoreApplication::arguments();
+    for (int i = 1; i < arguments.size(); i++) {
+        if (arguments.at(i) == "-noforward")
+            noForwardFlag = 1;
+    }
+
+    ChatDialog *dialog = new ChatDialog(noForwardFlag);
     dialog->show();
 
-    QStringList arguments = QCoreApplication::arguments();
     if (arguments.size() > 1) {
         for (int i = 1; i < arguments.size(); i++) {
             dialog->addNewPeerCommandline(arguments.at(i));

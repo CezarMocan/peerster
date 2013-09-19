@@ -24,7 +24,7 @@ class ChatDialog : public QDialog
 	Q_OBJECT
 
 public:
-	ChatDialog();    
+    ChatDialog(bool noForwardFlag = 0);
 
     void addNewPeerCommandline(QString address);
 
@@ -99,7 +99,11 @@ private:
     // Map of peer names to their corresponding UI private chat windows
     QMap<QString, PrivateChatDialog*> privateChatMap;
 
+    // Default name for receiving a private message from an unknown peer
     QString RECEIVED_MESSAGE_WINDOW;
+
+    // no forward option
+    bool noForwardFlag;
 
     // Create a new window for this peer, if there isn't already one
     void createPrivateDialog(QString peerName);
