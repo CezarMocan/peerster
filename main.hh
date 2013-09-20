@@ -62,7 +62,7 @@ public slots:
     void lookedUp(QHostInfo host);
 
     // Slot called every time a new message is received / generated
-    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
+    int addReceivedMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 isDirect = 0);
 
     void peerClicked(QListWidgetItem *item);
 

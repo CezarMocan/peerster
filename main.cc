@@ -249,13 +249,20 @@ void ChatDialog::gotReturnPressed()
 void ChatDialog::spreadRumor(Peer previous, QString from, QString message, int position) {
     srand(time(0));
 
-    while (1) {
-        Peer randomPeer = peerList[rand() % peerList.size()];
-        //qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
-        sock->sendMessage(from, message, position, randomPeer, previous.hostAddress.toIPv4Address(), previous.port);
+    if (message != NULL) { // Chat rumor
+        while (1) {
+            Peer randomPeer = peerList[rand() % peerList.size()];
+            //qDebug() << "Rumormongering: sending message to peer: " << randomPeer.hostAddress << randomPeer.port;
+            sock->sendMessage(from, message, position, randomPeer, previous.hostAddress.toIPv4Address(), previous.port);
 
-        if (rand() % 2 == 0)
-            return;
+            if (rand() % 2 == 0)
+                return;
+        }
+    } else { // Route rumor -> send to everybody
+        for (int i = 0; i < peerList.size(); i++) {
+            Peer currentPeer = peerList[i];
+            sock->sendMessage(from, message, position, currentPeer, previous.hostAddress.toIPv4Address(), previous.port);
+        }
     }
 }
 
@@ -270,7 +277,7 @@ void ChatDialog::antiEntropySendStatus() {
     sock->sendStatus(randomPeer, messages);    
 }
 
-int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 hopLimit) {
+int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 isDirect) {
     //qDebug() << "Add received message" << seqNo;
     if (seqNo != SEND_PRIVATE && seqNo != RECEIVE_PRIVATE) { // Gossip message case
         int localSeqNo = messages[peerName].size() + 1;        
@@ -299,6 +306,10 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
             spreadRumor(senderPeer, peerName, message, messages[peerName].size());
             return 0;
         } else if (seqNo < localSeqNo) {
+            if (isDirect) {
+                qDebug() << "Received a direct message, updating map!";
+                routingMap[peerName] = senderPeer;
+            }
             return 1; // This message has already been received
         } else { // It's bigger so I skipped a few messages; need to retrieve them first
             sock->sendStatus(senderPeer, messages); // send a status map and start gossip with the sender, until I'm up to date
@@ -342,18 +353,20 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         if (textVariantMap.contains(sock->DEFAULT_TEXT_KEY))
             receivedText = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
 
+        bool isDirect = 1;
         if (textVariantMap.contains(sock->DEFAULT_LAST_IP_KEY)) {
             lastIp = textVariantMap[sock->DEFAULT_LAST_IP_KEY].toUInt();
             lastPort = textVariantMap[sock->DEFAULT_LAST_PORT_KEY].toUInt();
             Peer lastPeer(QHostAddress(lastIp), lastPort);
             addPeerToList(lastPeer);
             qDebug() << "Last peer:" << lastIp << lastPort;
+            isDirect = 0;
         }
 
         QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
         quint32 seqNo = textVariantMap[sock->DEFAULT_SEQ_NO_KEY].toUInt();
 
-        emit(gotNewMessage(currentPeer, originName, receivedText, seqNo)); 
+        emit(gotNewMessage(currentPeer, originName, receivedText, seqNo, isDirect));
 
         return 0;
     }
