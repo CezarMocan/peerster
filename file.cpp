@@ -32,12 +32,16 @@ int File::parseFile() {
 
 QByteArray File::hashFile(QByteArray contents, int blockSize) {
     QByteArray result;
+    QCA::Initializer qcainit;
 
     while (contents.size() != 0) {
         qDebug() << "pula";
         QByteArray block = contents.left(blockSize);
         qDebug() << "computed block of size " << block.size();
-        QCA::Hash shaHash("md1");
+        if (!QCA::isSupported("sha256")) {
+            qDebug() << "SHA256 not supported!";
+        }
+        QCA::Hash shaHash("sha1");
         qDebug() << "declared hash";
         shaHash.hash(block);
         //shaHash.update("pula");

@@ -500,8 +500,7 @@ void ChatDialog::printRoutingMap(QMap<QString, Peer> map) {
 int main(int argc, char **argv)
 {
 	// Initialize Qt toolkit
-	QApplication app(argc,argv);
-    QCA::Initializer qcainit;
+	QApplication app(argc,argv);    
 
     // Show initial chat dialog window
 
