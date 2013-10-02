@@ -33,15 +33,35 @@ ChatDialog::ChatDialog(bool noForwardFlag)
     localhostName = QHostInfo::localHostName() + "-" + QString::number(rand() % 1000000) + ":" + QString::number(sock->getCurrentPort());    
     localhost = new Peer(QHostAddress::LocalHost, sock->getCurrentPort());    
 
-	setWindowTitle("Peerster - " + localhostName);
+    setUpUI();
 
-	// Read-only text box where we display messages from everyone.
-	// This widget expands both horizontally and vertically.
-	textview = new QTextEdit(this);
-	textview->setReadOnly(true);
-	    
-    
+    discoverPeers();
+
+    QTimer *antiEntropyTimer = new QTimer(this);
+    connect(antiEntropyTimer, SIGNAL(timeout()), this, SLOT(antiEntropySendStatus()));
+    antiEntropyTimer->start(ANTI_ENTROPY_FREQ);
+
+    QTimer *routeMessageTimer = new QTimer(this);
+    connect(routeMessageTimer, SIGNAL(timeout()), this, SLOT(sendRouteMessage()));
+    routeMessageTimer->start(ROUTE_MESSAGE_FREQ);
+
+    connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32, quint32)),
+            this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+
+    RECEIVED_MESSAGE_WINDOW = "Anonymus";
+    sendRouteMessage();
+}
+
+void ChatDialog::setUpUI() {
+    setWindowTitle("Peerster - " + localhostName);
+
+    textview = new QTextEdit(this);
+    textview->setReadOnly(true);
+
     textline = new MultiLineEdit(this);
+    textline->setFocus();
+    connect(textline, SIGNAL(returnSignal()),
+        this, SLOT(gotReturnPressed()));
 
     addressLine = new QLineEdit(this);
     addressLabel = new QLabel("Address", this);
@@ -61,19 +81,19 @@ ChatDialog::ChatDialog(bool noForwardFlag)
 
     connect(addPeerButton, SIGNAL(clicked()), this, SLOT(addNewPeerFromUI()));
 
-	// Lay out the widgets to appear in the main window.
-	// For Qt widget and layout concepts see:
-	// http://doc.qt.nokia.com/4.7-snapshot/widgets-and-layouts.html
+    shareFileButton = new QPushButton("Share file", this);
+    connect(shareFileButton, SIGNAL(clicked()), this, SLOT(openFileDialog()));
+
+    fileDialog = new QFileDialog(this);
+    fileDialog->setFileMode(QFileDialog::ExistingFiles);
 
     QHBoxLayout *addressLayout = new QHBoxLayout();
     addressLayout->addWidget(addressLabel);
     addressLayout->addWidget(addressLine);
-    //layout->addItem(addressLayout);
 
     QHBoxLayout *portLayout = new QHBoxLayout();
     portLayout->addWidget(portLabel);
     portLayout->addWidget(portLine);
-    //layout->addItem(portLayout);
 
     QVBoxLayout *peerLayout = new QVBoxLayout();
     peerLayout->addWidget(peerNameListLabel, 1, Qt::AlignCenter);
@@ -83,6 +103,7 @@ ChatDialog::ChatDialog(bool noForwardFlag)
     peerLayout->addLayout(addressLayout, 1);
     peerLayout->addLayout(portLayout, 1);
     peerLayout->addWidget(addPeerButton, 2);
+    peerLayout->addWidget(shareFileButton, 2);
 
     QVBoxLayout *textLayout = new QVBoxLayout();
     textLayout->addWidget(textview, 50);
@@ -92,36 +113,21 @@ ChatDialog::ChatDialog(bool noForwardFlag)
     layout->addLayout(textLayout, 2);
     layout->addLayout(peerLayout, 1);
 
-	setLayout(layout);
+    setLayout(layout);
+}
 
-    // Set focus on the text box before, so the user doesn't have to do it
-    textline->setFocus();
-
-	// Register a callback on the textline's returnPressed signal
-	// so that we can send the message entered by the user.
-	connect(textline, SIGNAL(returnSignal()),
-		this, SLOT(gotReturnPressed()));
-
-    discoverPeers();
-
-    QTimer *antiEntropyTimer = new QTimer(this);
-    connect(antiEntropyTimer, SIGNAL(timeout()), this, SLOT(antiEntropySendStatus()));
-    antiEntropyTimer->start(ANTI_ENTROPY_FREQ);
-
-    QTimer *routeMessageTimer = new QTimer(this);
-    connect(routeMessageTimer, SIGNAL(timeout()), this, SLOT(sendRouteMessage()));
-    routeMessageTimer->start(ROUTE_MESSAGE_FREQ);
-
-    connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32, quint32)),
-            this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
-
-    RECEIVED_MESSAGE_WINDOW = "Anonymus";
-//    privateChatMap[RECEIVED_MESSAGE_WINDOW] = new PrivateChatDialog(this, RECEIVED_MESSAGE_WINDOW, localhostName);
-//    privateChatMap[RECEIVED_MESSAGE_WINDOW]->hide();
-//    connect(this, SIGNAL(receivedPrivateMessage(QString, QString)),
-//            privateChatMap[RECEIVED_MESSAGE_WINDOW], SLOT(addReceivedPrivateMessage(QString, QString)));
-
-    sendRouteMessage();
+void ChatDialog::openFileDialog() {
+    // TODO: Support directories
+    QStringList fileNames;
+    fileDialog->show();
+    if (fileDialog->exec()) {
+        fileNames = fileDialog->selectedFiles();
+        fileDialog->hide();
+        for (int i = 0; i < fileNames.size(); i++) {
+            qDebug() << fileNames.at(i) << "\n";
+            File *file = new File(fileNames.at(i));
+        }
+    }
 }
 
 void ChatDialog::createPrivateDialog(QString peerName) {
@@ -495,6 +501,7 @@ int main(int argc, char **argv)
 {
 	// Initialize Qt toolkit
 	QApplication app(argc,argv);
+    QCA::Initializer qcainit;
 
     // Show initial chat dialog window
 

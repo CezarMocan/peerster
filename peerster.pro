@@ -7,17 +7,20 @@ TARGET =
 DEPENDPATH += .
 INCLUDEPATH += .
 QT += network
+CONFIG += crypto
 
 # Input
 HEADERS += main.hh \
     netsocket.hh \
     peer.hh \
     privatechatdialog.h \
-    multilineedit.h
+    multilineedit.h \
+    file.h
 SOURCES += main.cc \
     netsocket.cc \
     peer.cc \
     privatechatdialog.cpp \
-    multilineedit.cpp
+    multilineedit.cpp \
+    file.cpp
 
 FORMS +=

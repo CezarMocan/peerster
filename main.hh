@@ -13,11 +13,14 @@
 #include <QHostInfo>
 #include <QTimer>
 #include <QListWidget>
+#include <QFileDialog>
+#include <QtCrypto>
 
 #include "netsocket.hh"
 #include "peer.hh"
 #include "multilineedit.h"
 #include "privatechatdialog.h"
+#include <file.h>
 
 class ChatDialog : public QDialog
 {
@@ -46,6 +49,9 @@ signals:
 public slots:
     // Slot for UI - what to do when Return key is pressed
 	void gotReturnPressed();
+
+    // Slot for UI - share file button is pressed, open dialog and get the selected files
+    void openFileDialog();
 
     // Slot for reading the actual message from the socket;
     // Signal emitted by slot when there's something in the reading queue
@@ -85,6 +91,8 @@ private:
     QLabel *peerviewLabel;
     QListWidget *peerNameList;
     QLabel *peerNameListLabel;
+    QPushButton *shareFileButton;
+    QFileDialog *fileDialog;
 
     // Messages by Origin name
     QMap<QString, QVector<QString> > messages;
@@ -104,6 +112,9 @@ private:
 
     // no forward option
     bool noForwardFlag;
+
+    // Called by constructor; Creates the whole UI and adds corresponding signals
+    void setUpUI();
 
     // Create a new window for this peer, if there isn't already one
     void createPrivateDialog(QString peerName);
