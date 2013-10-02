@@ -91,8 +91,11 @@ private:
     QLabel *peerviewLabel;
     QListWidget *peerNameList;
     QLabel *peerNameListLabel;
+
     QPushButton *shareFileButton;
     QFileDialog *fileDialog;
+    QListWidget *shareView;
+    QLabel *shareLabel;
 
     // Messages by Origin name
     QMap<QString, QVector<QString> > messages;
@@ -106,6 +109,9 @@ private:
 
     // Map of peer names to their corresponding UI private chat windows
     QMap<QString, PrivateChatDialog*> privateChatMap;
+
+    // List of files that are shared by our peerster
+    QVector<File> sharedFiles;
 
     // Default name for receiving a private message from an unknown peer
     QString RECEIVED_MESSAGE_WINDOW;
@@ -137,6 +143,12 @@ private:
 
     // Main method for parsing a received message and calling what's necessary
     int parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 port);
+
+    // Check if I have an entry for dest and if hopLimit is greater than 0
+    bool checkForward(quint32 hopLimit, QString dest);
+
+    // Chech if SHA256 of data is equal to hash
+    bool ChatDialog::checkHash(QByteArray data, QByteArray hash);
 };
 
 #endif // PEERSTER_MAIN_HH

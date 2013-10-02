@@ -9,13 +9,17 @@ class File
 {
 public:
     static const int BLOCK_SIZE;
-    File(QString fileName);
 
-private:
     QString fileName;
+
+    File();
+    File(QString fileName);
+    bool operator==(const File& other) const;
+
+private:    
     qint64 fileSize;
     QByteArray blocklist;
-    QByteArray blocklistHash;
+    QByteArray fileID;
     QByteArray contents;
 
     int parseFile();

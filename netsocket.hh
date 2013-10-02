@@ -24,6 +24,9 @@ public:
     static const QString DEFAULT_HOP_LIMIT_KEY;
     static const QString DEFAULT_LAST_IP_KEY;
     static const QString DEFAULT_LAST_PORT_KEY;
+    static const QString DEFAULT_BLOCK_REQUEST_KEY;
+    static const QString DEFAULT_BLOCK_REPLY_KEY;
+    static const QString DEFAULT_DATA_KEY;
 
     static const quint32 HOP_LIMIT;
 
@@ -40,6 +43,9 @@ public:
     void sendMessage(QString from, QString message, int position, Peer to, quint32 lastIp, quint16 lastPort);
 
     void sendPrivateMessage(QString originName, QString peerName, QString message, Peer firstHop, quint32 hopLimit);
+
+    void sendBlockRequest(QString originName, QString dest, QByteArray requestedBlock, Peer firstHop, quint32 hopLimit);
+    void sendBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, Peer firstHop, quint32 hopLimit);
 
     void sendStatus(Peer from, QMap<QString, QVector<QString> > messages);
 

@@ -5,16 +5,23 @@
 
 const int File::BLOCK_SIZE = 8192;
 
+File::File() {
+}
+
 File::File(QString fileName) {
     this->fileName = fileName;
     if (parseFile() == 0) {
         qDebug() << "Opened file " << fileName << " with size " << this->fileSize;
         blocklist = hashFile(contents, BLOCK_SIZE);
         qDebug() << "Calculated blocklist";
-        blocklistHash = hashFile(blocklist, BLOCK_SIZE);
+        fileID = hashFile(blocklist, BLOCK_SIZE);
 
-        qDebug() << blocklist << " " << blocklistHash;
+        qDebug() << blocklist.toHex() << "\n" << fileID.toHex();
     }
+}
+
+bool File::operator== (const File& other) const {
+    return (fileName == other.fileName);
 }
 
 int File::parseFile() {
@@ -31,22 +38,18 @@ int File::parseFile() {
 }
 
 QByteArray File::hashFile(QByteArray contents, int blockSize) {
-    QByteArray result;
-    QCA::Initializer qcainit;
+    QByteArray result;    
 
-    while (contents.size() != 0) {
-        qDebug() << "pula";
+    while (contents.size() != 0) {        
         QByteArray block = contents.left(blockSize);
         qDebug() << "computed block of size " << block.size();
         if (!QCA::isSupported("sha256")) {
             qDebug() << "SHA256 not supported!";
         }
-        QCA::Hash shaHash("sha1");
-        qDebug() << "declared hash";
-        shaHash.hash(block);
-        //shaHash.update("pula");
+
+        QCA::Hash shaHash("sha256");
         QByteArray blockHash = shaHash.hash(block).toByteArray();
-        qDebug() << "created hash";
+
         result.append(blockHash);
         if (blockSize > contents.size())
             return result;

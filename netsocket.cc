@@ -14,6 +14,9 @@ const QString NetSocket::DEFAULT_DEST_KEY = QString("Dest");
 const QString NetSocket::DEFAULT_HOP_LIMIT_KEY = QString("HopLimit");
 const QString NetSocket::DEFAULT_LAST_IP_KEY = QString("LastIP");
 const QString NetSocket::DEFAULT_LAST_PORT_KEY = QString("LastPort");
+const QString NetSocket::DEFAULT_BLOCK_REQUEST_KEY = QString("BlockRequest");
+const QString NetSocket::DEFAULT_BLOCK_REPLY_KEY = QString("BlockReply");
+const QString NetSocket::DEFAULT_DATA_KEY = QString("Data");
 
 
 NetSocket::NetSocket(bool noForwardFlag) {
@@ -132,6 +135,15 @@ void NetSocket::sendPrivateMessage(QString originName, QString peerName, QString
     QByteArray serializedMessage = serializeVariantMap(serializePrivateMessage(originName, peerName, message, hopLimit));
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
+
+void NetSocket::sendBlockRequest(QString originName, QString dest, QByteArray requestedBlock, Peer firstHop, quint32 hopLimit) {
+
+}
+
+void NetSocket::sendBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, Peer firstHop, quint32 hopLimit) {
+
+}
+
 
 void NetSocket::sendStatus(Peer from, QMap<QString, QVector<QString> > messages) {
     QVariantMap status = createStatusMap(messages);

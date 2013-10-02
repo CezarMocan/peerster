@@ -87,6 +87,9 @@ void ChatDialog::setUpUI() {
     fileDialog = new QFileDialog(this);
     fileDialog->setFileMode(QFileDialog::ExistingFiles);
 
+    shareView = new QListWidget(this);
+    shareLabel = new QLabel("Shared files", this);
+
     QHBoxLayout *addressLayout = new QHBoxLayout();
     addressLayout->addWidget(addressLabel);
     addressLayout->addWidget(addressLine);
@@ -102,16 +105,21 @@ void ChatDialog::setUpUI() {
     peerLayout->addWidget(peerview, 15);
     peerLayout->addLayout(addressLayout, 1);
     peerLayout->addLayout(portLayout, 1);
-    peerLayout->addWidget(addPeerButton, 2);
-    peerLayout->addWidget(shareFileButton, 2);
+    peerLayout->addWidget(addPeerButton, 2);    
 
     QVBoxLayout *textLayout = new QVBoxLayout();
     textLayout->addWidget(textview, 50);
     textLayout->addWidget(textline, 10);
 
+    QVBoxLayout *shareLayout = new QVBoxLayout();
+    shareLayout->addWidget(shareLabel, 1, Qt::AlignCenter);
+    shareLayout->addWidget(shareView, 50);
+    shareLayout->addWidget(shareFileButton, 10);
+
     QHBoxLayout *layout = new QHBoxLayout();
     layout->addLayout(textLayout, 2);
     layout->addLayout(peerLayout, 1);
+    layout->addLayout(shareLayout, 1);
 
     setLayout(layout);
 }
@@ -125,7 +133,11 @@ void ChatDialog::openFileDialog() {
         fileDialog->hide();
         for (int i = 0; i < fileNames.size(); i++) {
             qDebug() << fileNames.at(i) << "\n";
-            File *file = new File(fileNames.at(i));
+            File file(fileNames.at(i));
+
+            shareView->addItem(fileNames.at(i));
+            if (!sharedFiles.contains(file))
+                sharedFiles.append(file);
         }
     }
 }
@@ -283,23 +295,18 @@ void ChatDialog::antiEntropySendStatus() {
     sock->sendStatus(randomPeer, messages);    
 }
 
-int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 isDirect) {
-    //qDebug() << "Add received message" << seqNo;
+int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString message, quint32 seqNo, quint32 isDirect) {    
     if (seqNo != SEND_PRIVATE && seqNo != RECEIVE_PRIVATE) { // Gossip message case
         int localSeqNo = messages[peerName].size() + 1;        
         // NEW MESSAGE! PROPAGAAAATE!!!
         if (seqNo == localSeqNo) {
             if (message != NULL) {
-                textview->append("[" + peerName + "]: " + message);
-                //qDebug() << localhostName << " Received message from: " << senderPeer.hostAddress << ":" << senderPeer.port << "message = " << message << seqNo << localSeqNo;
-            } else {
-                //qDebug() << localhostName << " Received routing from: " << senderPeer.hostAddress << ":" << senderPeer.port << seqNo << localSeqNo;
+                textview->append("[" + peerName + "]: " + message);                
             }
 
             messages[peerName].push_back(message);
 
             // Add origin/sender to routing map
-            //qDebug() << "Add received message: " << peerName << senderPeer.hostAddress << ":" << senderPeer.port;
             if (!routingMap.contains(peerName))
                 peerNameList->addItem(peerName);
             routingMap[peerName] = senderPeer;
@@ -432,7 +439,7 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         return 0;
     }
 
-    if (textVariantMap.contains(sock->DEFAULT_DEST_KEY)) {
+    if (textVariantMap.contains(sock->DEFAULT_DEST_KEY) && textVariantMap.contains(sock->DEFAULT_TEXT_KEY)) {
         // Received private message
         QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
         QString message = textVariantMap[sock->DEFAULT_TEXT_KEY].toString();
@@ -447,12 +454,8 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
             emit(gotNewMessage(currentPeer, originName, message, RECEIVE_PRIVATE, hopLimit));
         } else {
             // Drop a message if I'm not the destination and hopLimit got to be 0
-            if (hopLimit == 0)
+            if (!checkForward(hopLimit, dest))
                 return 0;
-            if (!routingMap.contains(dest)) {
-                qDebug() << "[Warning]: Received private message, but map entry for its destination is empty!!!";
-                return -1;
-            }
 
             if (originName == RECEIVED_MESSAGE_WINDOW)
                 sock->sendPrivateMessage(NULL, dest, message, routingMap[dest], hopLimit);
@@ -463,9 +466,64 @@ int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender,
         return 0;
     }
 
+    if (textVariantMap.contains(sock->DEFAULT_DEST_KEY) && textVariantMap.contains(sock->DEFAULT_BLOCK_REQUEST_KEY)) {
+        // Received block request
+        QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
+        quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
+        QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
+        QByteArray requestedBlock = textVariantMap[sock->DEFAULT_BLOCK_REQUEST_KEY].toByteArray();
+
+        if (dest == localhostName) {
+            // TODO: handle
+        } else {
+            if (!checkForward(hopLimit, dest))
+                return 0;
+
+            sock->sendBlockRequest(originName, dest, requestedBlock, routingMap[dest], hopLimit);
+        }
+
+    }
+
+    if (textVariantMap.contains(sock->DEFAULT_DEST_KEY) && textVariantMap.contains(sock->DEFAULT_BLOCK_REPLY_KEY)) {
+        // Received block response
+        QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
+        quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
+        QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
+        QByteArray repliedBlock = textVariantMap[sock->DEFAULT_BLOCK_REPLY_KEY].toByteArray();
+        QByteArray data = textVariantMap[sock->DEFAULT_DATA_KEY].toByteArray();
+
+        if (dest == localhostName) {
+            // TODO: handle
+        } else {
+            if (!checkForward(hopLimit, dest))
+                return 0;
+            if (!checkHash(data, repliedBlock)) // Drop
+                return 0;
+
+            sock->sendBlockReply(originName, dest, repliedBlock, data, routingMap[dest], hopLimit);
+        }
+    }
+
     qDebug() << "Received bad map from: " << sender << " " << senderPort;
     printMap(textVariantMap, "bad_map_guy");
     return -1;
+}
+
+bool ChatDialog::checkForward(quint32 hopLimit, QString dest) {
+    if (hopLimit == 0) // Drop
+        return false;
+    if (!routingMap.contains(dest)) {
+        qDebug() << "[Warning]: Received private message, but map entry for its destination is empty!!!";
+        return false;
+    }
+
+    return true;
+}
+
+bool ChatDialog::checkHash(QByteArray data, QByteArray hash) {
+    QCA::Hash shaHash("sha256");
+    QByteArray blockHash = shaHash.hash(data).toByteArray();
+    return (blockHash == hash);
 }
 
 void ChatDialog::receiveMessage() {
@@ -499,7 +557,10 @@ void ChatDialog::printRoutingMap(QMap<QString, Peer> map) {
 
 int main(int argc, char **argv)
 {
-	// Initialize Qt toolkit
+    // Initialize QCA
+    QCA::Initializer qcainit;
+
+    // Initialize Qt toolkit
 	QApplication app(argc,argv);    
 
     // Show initial chat dialog window
