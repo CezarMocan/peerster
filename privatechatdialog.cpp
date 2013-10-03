@@ -44,7 +44,7 @@ void PrivateChatDialog::buttonClicked() {
     textview->append("[" + localhostName + "]: " + message);
     textline->clear();
 
-    emit privateChatSendMessage(*(new Peer()), peerName, message, ChatDialog::SEND_PRIVATE, 0); // figure out the empty peer
+    emit privateChatSendMessage(*(new Peer()), peerName, message, NetSocket::SEND_PRIVATE, 0); // figure out the empty peer
 }
 
 void PrivateChatDialog::addReceivedPrivateMessage(QString peerName, QString message) {

@@ -15,12 +15,14 @@ HEADERS += main.hh \
     peer.hh \
     privatechatdialog.h \
     multilineedit.h \
-    file.h
+    file.h \
+    messagehandler.h
 SOURCES += main.cc \
     netsocket.cc \
     peer.cc \
     privatechatdialog.cpp \
     multilineedit.cpp \
-    file.cpp
+    file.cpp \
+    messagehandler.cpp
 
 FORMS +=

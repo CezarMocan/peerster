@@ -14,13 +14,13 @@
 #include <QTimer>
 #include <QListWidget>
 #include <QFileDialog>
-#include <QtCrypto>
 
 #include "netsocket.hh"
 #include "peer.hh"
 #include "multilineedit.h"
 #include "privatechatdialog.h"
-#include <file.h>
+#include "file.h"
+#include "messagehandler.h"
 
 class ChatDialog : public QDialog
 {
@@ -35,12 +35,16 @@ public:
     static const int ANTI_ENTROPY_FREQ;
     static const int ROUTE_MESSAGE_FREQ;
     static const quint32 HOP_LIMIT;
-    static const quint32 SEND_PRIVATE;
-    static const quint32 RECEIVE_PRIVATE;
 
     // Localhost info
     Peer *localhost;
     QString localhostName;
+
+    // Messages by Origin name
+    QMap<QString, QVector<QString> > messages;
+
+    // Routing map: name->peer
+    QMap<QString, Peer> routingMap;
 
 signals:
     void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
@@ -72,9 +76,15 @@ public slots:
 
     void peerClicked(QListWidgetItem *item);
 
+    // Add peer to peer list and UI list
+    void addPeerToList(Peer peer);
+
 private:
     // Network socket for communicating with the other clients
     NetSocket *sock;
+
+    // Message parser
+    MessageHandler *messageHandler;
 
     // Port of the last added peer
     QString lastAddedPort;
@@ -97,24 +107,15 @@ private:
     QListWidget *shareView;
     QLabel *shareLabel;
 
-    // Messages by Origin name
-    QMap<QString, QVector<QString> > messages;
-
     // List of current peers
     QVector<Peer> peerList;
     QVector<QTimer*> peerTimers;
-
-    // Routing map: name->peer
-    QMap<QString, Peer> routingMap;
 
     // Map of peer names to their corresponding UI private chat windows
     QMap<QString, PrivateChatDialog*> privateChatMap;
 
     // List of files that are shared by our peerster
-    QVector<File> sharedFiles;
-
-    // Default name for receiving a private message from an unknown peer
-    QString RECEIVED_MESSAGE_WINDOW;
+    QVector<File> sharedFiles;        
 
     // no forward option
     bool noForwardFlag;
@@ -124,9 +125,6 @@ private:
 
     // Create a new window for this peer, if there isn't already one
     void createPrivateDialog(QString peerName);
-
-    // Add peer to peer list and UI list
-    void addPeerToList(Peer peer);
 
     // Called by UI / command line peer adding methods
     void addNewPeerGeneral(QString address, QString portS);
@@ -143,12 +141,6 @@ private:
 
     // Main method for parsing a received message and calling what's necessary
     int parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 port);
-
-    // Check if I have an entry for dest and if hopLimit is greater than 0
-    bool checkForward(quint32 hopLimit, QString dest);
-
-    // Chech if SHA256 of data is equal to hash
-    bool ChatDialog::checkHash(QByteArray data, QByteArray hash);
 };
 
 #endif // PEERSTER_MAIN_HH

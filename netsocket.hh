@@ -28,7 +28,12 @@ public:
     static const QString DEFAULT_BLOCK_REPLY_KEY;
     static const QString DEFAULT_DATA_KEY;
 
+    static const quint32 SEND_PRIVATE;
+    static const quint32 RECEIVE_PRIVATE;
     static const quint32 HOP_LIMIT;
+
+    // Default name for receiving a private message from an unknown peer
+    static const QString RECEIVED_MESSAGE_WINDOW;
 
     NetSocket(bool noForwardFlag = 0);
 

@@ -18,6 +18,12 @@ const QString NetSocket::DEFAULT_BLOCK_REQUEST_KEY = QString("BlockRequest");
 const QString NetSocket::DEFAULT_BLOCK_REPLY_KEY = QString("BlockReply");
 const QString NetSocket::DEFAULT_DATA_KEY = QString("Data");
 
+const quint32 NetSocket::SEND_PRIVATE = 200000001;
+const quint32 NetSocket::RECEIVE_PRIVATE = 200000002;
+
+const QString NetSocket::RECEIVED_MESSAGE_WINDOW = "Anonymus";
+
+
 
 NetSocket::NetSocket(bool noForwardFlag) {
 	// Pick a range of four UDP ports to try to allocate by default,
