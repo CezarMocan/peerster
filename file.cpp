@@ -4,19 +4,20 @@
 #include "file.h"
 
 const int File::BLOCK_SIZE = 8192;
+const int File::SHA_SIZE = 32;
 
 File::File() {
 }
 
-File::File(QString fileName) {
+File::File(QString fileName, QMap<QByteArray, QByteArray> *hashToBlock, QMap<QByteArray, QByteArray> *blockToHash) {
     this->fileName = fileName;
     if (parseFile() == 0) {
         qDebug() << "Opened file " << fileName << " with size " << this->fileSize;
-        blocklist = hashFile(contents, BLOCK_SIZE);
+        blocklist = hashFile(contents, BLOCK_SIZE, hashToBlock, blockToHash);
         qDebug() << "Calculated blocklist";
-        fileID = hashFile(blocklist, BLOCK_SIZE);
+        fileID = hashFile(blocklist, BLOCK_SIZE, hashToBlock, blockToHash);
 
-        qDebug() << blocklist.toHex() << "\n" << fileID.toHex();
+        qDebug() << "FileID for " << fileName << " is " << fileID.toHex();
     }
 }
 
@@ -37,7 +38,8 @@ int File::parseFile() {
     return 0;
 }
 
-QByteArray File::hashFile(QByteArray contents, int blockSize) {
+QByteArray File::hashFile(QByteArray contents, int blockSize, QMap<QByteArray, QByteArray> *hashToBlock,
+                          QMap<QByteArray, QByteArray> *blockToHash) {
     QByteArray result;    
 
     while (contents.size() != 0) {        
@@ -49,6 +51,9 @@ QByteArray File::hashFile(QByteArray contents, int blockSize) {
 
         QCA::Hash shaHash("sha256");
         QByteArray blockHash = shaHash.hash(block).toByteArray();
+
+        hashToBlock->insert(blockHash, block);
+        blockToHash->insert(block, blockHash);
 
         result.append(blockHash);
         if (blockSize > contents.size())

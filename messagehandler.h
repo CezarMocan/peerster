@@ -21,6 +21,8 @@ public:
 signals:
     void gotNewRumorMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
     void gotNewPrivateMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
+    void gotNewBlockRequest(QString dest, quint32 hopLimit, QString originName, QByteArray requestedBlock);
+    void gotNewBlockResponse(QString originName, QByteArray repliedBlock, QByteArray data);
     void handlerAddPeerToList(Peer currentPeer);
 
 private:
@@ -42,6 +44,8 @@ private:
 
     // Chech if SHA256 of data is equal to hash
     bool checkHash(QByteArray data, QByteArray hash);
+
+    void printMap(QVariantMap map);
 };
 
 #endif // MESSAGEHANDLER_H

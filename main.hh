@@ -14,13 +14,14 @@
 #include <QTimer>
 #include <QListWidget>
 #include <QFileDialog>
+#include <QComboBox>
 
 #include "netsocket.hh"
 #include "peer.hh"
 #include "multilineedit.h"
 #include "privatechatdialog.h"
-#include "file.h"
 #include "messagehandler.h"
+#include "filemanager.h"
 
 class ChatDialog : public QDialog
 {
@@ -49,6 +50,7 @@ public:
 signals:
     void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
     void receivedPrivateMessage(QString peerName, QString message);
+    void retrieveFileByID(QByteArray shaHash, QString peerName, Peer firstHop, quint32 hopLimit);
 
 public slots:
     // Slot for UI - what to do when Return key is pressed
@@ -79,12 +81,27 @@ public slots:
     // Add peer to peer list and UI list
     void addPeerToList(Peer peer);
 
+    // Send reply for block request
+    void handleBlockRequest(QString dest, quint32 hopLimit, QString originName, QByteArray requestedBlock);
+
+    // Slot for search by SHA button
+    void searchByShaClicked();
+
+    // Slot for FileManager's signal for when a block request is ready to send
+    void sendBlockRequest(QByteArray block, QString originName, quint32 blockID);
+
+    // Move file from pending list to shared files list when transfer is complete
+    void transferComplete(QByteArray fileID, QString fileName);
+
 private:
     // Network socket for communicating with the other clients
     NetSocket *sock;
 
     // Message parser
     MessageHandler *messageHandler;
+
+    // File manager
+    FileManager *fileManager;
 
     // Port of the last added peer
     QString lastAddedPort;
@@ -107,15 +124,20 @@ private:
     QListWidget *shareView;
     QLabel *shareLabel;
 
+    QListWidget *pendingView;
+    QLabel *pendingLabel;
+    QLabel *searchBySHA;
+    QLineEdit *shaSearchLine;
+    QComboBox *nodeToAskLine;
+    QLabel *nodeToAskLabel;
+    QPushButton *shaSearchButton;
+
     // List of current peers
     QVector<Peer> peerList;
     QVector<QTimer*> peerTimers;
 
     // Map of peer names to their corresponding UI private chat windows
     QMap<QString, PrivateChatDialog*> privateChatMap;
-
-    // List of files that are shared by our peerster
-    QVector<File> sharedFiles;        
 
     // no forward option
     bool noForwardFlag;
@@ -138,9 +160,6 @@ private:
     // Print different kinds of maps - debug purposes
     void printMap(QVariantMap map, QString hostName);
     void printRoutingMap(QMap<QString, Peer> map);
-
-    // Main method for parsing a received message and calling what's necessary
-    int parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 port);
 };
 
 #endif // PEERSTER_MAIN_HH

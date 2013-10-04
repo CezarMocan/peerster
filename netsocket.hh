@@ -66,7 +66,9 @@ private:
     QVariantMap createStatusMap(QMap<QString, QVector<QString> > messages);
     QVariantMap serializeMessage(QString from, QString text, int position, quint32 lastIp, quint16 lastPort);
     QVariantMap serializePrivateMessage(QString originName, QString peerName, QString message, quint32 hopLimit);
-    QByteArray serializeVariantMap(QVariantMap map);    
+    QVariantMap serializeBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, quint32 hopLimit);
+    QVariantMap serializeBlockRequest(QString originName, QString dest, QByteArray requestedBlock, quint32 hopLimit);
+    QByteArray serializeVariantMap(QVariantMap map);        
 };
 
 #endif

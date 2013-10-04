@@ -113,6 +113,28 @@ QByteArray NetSocket::serializeVariantMap(QVariantMap map) {
     return (*serializedMessage);
 }
 
+QVariantMap NetSocket::serializeBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, quint32 hopLimit) {
+    QVariantMap blockReplyVariantMap;
+    blockReplyVariantMap.insert(DEFAULT_DEST_KEY, QVariant(dest));
+    blockReplyVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(originName));
+    blockReplyVariantMap.insert(DEFAULT_HOP_LIMIT_KEY, QVariant(hopLimit));
+    blockReplyVariantMap.insert(DEFAULT_BLOCK_REPLY_KEY, QVariant(repliedBlock));
+    blockReplyVariantMap.insert(DEFAULT_DATA_KEY, QVariant(data));
+
+    return blockReplyVariantMap;
+}
+
+QVariantMap NetSocket::serializeBlockRequest(QString originName, QString dest, QByteArray requestedBlock, quint32 hopLimit) {
+    QVariantMap blockRequestVariantMap;
+    blockRequestVariantMap.insert(DEFAULT_DEST_KEY, QVariant(dest));
+    blockRequestVariantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(originName));
+    blockRequestVariantMap.insert(DEFAULT_HOP_LIMIT_KEY, QVariant(hopLimit));
+    blockRequestVariantMap.insert(DEFAULT_BLOCK_REQUEST_KEY, QVariant(requestedBlock));
+
+    return blockRequestVariantMap;
+}
+
+
 // Sends message to all peer list
 void NetSocket::sendMessage(QString from, QString message, int position, QVector<Peer> peerList) {
     if (noForwardFlag && message != NULL)
@@ -143,11 +165,15 @@ void NetSocket::sendPrivateMessage(QString originName, QString peerName, QString
 }
 
 void NetSocket::sendBlockRequest(QString originName, QString dest, QByteArray requestedBlock, Peer firstHop, quint32 hopLimit) {
-
+    QByteArray serializedMessage = serializeVariantMap(serializeBlockRequest(originName, dest, requestedBlock, hopLimit));
+    qDebug() << "Sock: Sending block request to " << firstHop.port;
+    writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 
 void NetSocket::sendBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, Peer firstHop, quint32 hopLimit) {
-
+    QByteArray serializedMessage = serializeVariantMap(serializeBlockReply(originName, dest, repliedBlock, data, hopLimit));
+    qDebug() << "Sock: Sending block reply to " << firstHop.port;
+    writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 
 

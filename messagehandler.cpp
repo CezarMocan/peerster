@@ -23,7 +23,7 @@ void MessageHandler::parseRumorMessage(QVariantMap textVariantMap, Peer currentP
 
         emit handlerAddPeerToList(currentPeer);
         //parent->addPeerToList(lastPeer);
-        qDebug() << "Last peer:" << lastIp << lastPort;
+        //qDebug() << "Last peer:" << lastIp << lastPort;
         isDirect = 0;
     }
 
@@ -109,14 +109,19 @@ void MessageHandler::parsePrivateMessage(QVariantMap textVariantMap, Peer curren
 }
 
 void MessageHandler::parseBlockRequest(QVariantMap textVariantMap, Peer currentPeer) {
+    //printMap(textVariantMap);
     QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
     quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
     QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
     QByteArray requestedBlock = textVariantMap[sock->DEFAULT_BLOCK_REQUEST_KEY].toByteArray();
 
+    qDebug() << "Received block request with destination " << dest;
+
     if (dest == localhostName) {
-        // TODO: handle
+        qDebug() << "Block request is for me!";
+        emit(gotNewBlockRequest(dest, hopLimit, originName, requestedBlock));
     } else {
+        qDebug() << "Block request is not for me!";
         if (!checkForward(hopLimit, dest))
             return;
 
@@ -125,14 +130,17 @@ void MessageHandler::parseBlockRequest(QVariantMap textVariantMap, Peer currentP
 }
 
 void MessageHandler::parseBlockResponse(QVariantMap textVariantMap, Peer currentPeer) {
+    //printMap(textVariantMap);
     QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
     quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
     QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
     QByteArray repliedBlock = textVariantMap[sock->DEFAULT_BLOCK_REPLY_KEY].toByteArray();
     QByteArray data = textVariantMap[sock->DEFAULT_DATA_KEY].toByteArray();
 
+    qDebug() << "Got new block response for destination = " << dest;
+
     if (dest == localhostName) {
-        // TODO: handle
+        emit(gotNewBlockResponse(originName, repliedBlock, data));
     } else {
         if (!checkForward(hopLimit, dest))
             return;
@@ -143,14 +151,13 @@ void MessageHandler::parseBlockResponse(QVariantMap textVariantMap, Peer current
     }
 }
 
-
 void MessageHandler::parse(QByteArray *serializedMessage, QHostAddress sender, quint16 senderPort, QMap<QString, QVector<QString> > messages, QMap<QString, Peer> routingMap) {
     this->messages = messages;
     this->routingMap = routingMap;
 
     QVariantMap textVariantMap;
     QDataStream *deserializer = new QDataStream(serializedMessage, QIODevice::ReadOnly);
-    (*deserializer) >> textVariantMap;
+    (*deserializer) >> textVariantMap;    
 
     Peer currentPeer(sender, senderPort);
     emit handlerAddPeerToList(currentPeer);
@@ -202,4 +209,15 @@ bool MessageHandler::checkHash(QByteArray data, QByteArray hash) {
     QByteArray blockHash = shaHash.hash(data).toByteArray();
     return (blockHash == hash);
 }
+
+void MessageHandler::printMap(QVariantMap map) {
+    QVariantMap::iterator it;
+    qDebug() << "Printing received variant map\n";
+    for (it = map.begin(); it != map.end(); ++it) {
+        qDebug() << "    " << it.key() << it.value();
+    }
+
+    qDebug() << "\n\n";
+}
+
 

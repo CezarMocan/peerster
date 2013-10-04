@@ -10,6 +10,7 @@
 #include <QVariantMap>
 #include <QTimer>
 #include <QLabel>
+#include <QMessageBox>
 
 #include "main.hh"
 
@@ -35,7 +36,21 @@ ChatDialog::ChatDialog(bool noForwardFlag)
             this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
     connect(messageHandler, SIGNAL(gotNewPrivateMessage(Peer, QString, QString, quint32, quint32)),
             this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
+    connect(messageHandler, SIGNAL(gotNewBlockRequest(QString, quint32, QString, QByteArray)),
+            this, SLOT(handleBlockRequest(QString, quint32, QString, QByteArray)));
     connect(messageHandler, SIGNAL(handlerAddPeerToList(Peer)), this, SLOT(addPeerToList(Peer)));
+
+    fileManager = new FileManager(sock, localhostName);
+    connect(this, SIGNAL(retrieveFileByID(QByteArray, QString, Peer, quint32)),
+            fileManager, SLOT(retrieveFile(QByteArray, QString, Peer, quint32)));
+    connect(fileManager, SIGNAL(blockReadyForSending(QByteArray, QString, quint32)),
+            this, SLOT(sendBlockRequest(QByteArray, QString, quint32)));
+    connect(fileManager, SIGNAL(completedTransfer(QByteArray, QString)),
+            this, SLOT(transferComplete(QByteArray, QString)));
+
+
+    connect(messageHandler, SIGNAL(gotNewBlockResponse(QString,QByteArray,QByteArray)),
+            fileManager, SLOT(gotNewBlockResponse(QString,QByteArray,QByteArray)));
 
     setUpUI();
 
@@ -91,7 +106,17 @@ void ChatDialog::setUpUI() {
     fileDialog->setFileMode(QFileDialog::ExistingFiles);
 
     shareView = new QListWidget(this);
-    shareLabel = new QLabel("Shared files", this);
+    shareLabel = new QLabel("Shared files", this);    
+
+    pendingView = new QListWidget(this);
+    pendingLabel = new QLabel("Pending transfers", this);
+    searchBySHA = new QLabel("Search by file SHA256 hash", this);
+    shaSearchLine = new QLineEdit(this);
+    nodeToAskLabel = new QLabel("Peer to ask", this);
+    nodeToAskLine = new QComboBox(this);
+
+    shaSearchButton = new QPushButton("Search!", this);
+    connect(shaSearchButton, SIGNAL(clicked()), this, SLOT(searchByShaClicked()));
 
     QHBoxLayout *addressLayout = new QHBoxLayout();
     addressLayout->addWidget(addressLabel);
@@ -119,12 +144,58 @@ void ChatDialog::setUpUI() {
     shareLayout->addWidget(shareView, 50);
     shareLayout->addWidget(shareFileButton, 10);
 
+    QVBoxLayout *transferSearchLayout = new QVBoxLayout();
+    transferSearchLayout->addWidget(pendingLabel, 1, Qt::AlignCenter);
+    transferSearchLayout->addWidget(pendingView, 50);
+    transferSearchLayout->addWidget(searchBySHA, 1, Qt::AlignCenter);
+    transferSearchLayout->addWidget(shaSearchLine, 1);
+    transferSearchLayout->addWidget(nodeToAskLabel, 1);
+    transferSearchLayout->addWidget(nodeToAskLine, 1);
+    transferSearchLayout->addWidget(shaSearchButton, 1);
+
     QHBoxLayout *layout = new QHBoxLayout();
     layout->addLayout(textLayout, 2);
     layout->addLayout(peerLayout, 1);
     layout->addLayout(shareLayout, 1);
+    layout->addLayout(transferSearchLayout, 1);
 
     setLayout(layout);
+}
+
+void ChatDialog::searchByShaClicked() {
+    QString peerName = nodeToAskLine->currentText();
+    if (!routingMap.contains(peerName)) {
+        QMessageBox::warning(this, "Error", "Peer not found!");
+        return;
+    }
+
+    QString shaHashString = shaSearchLine->text();
+    if (shaHashString.isEmpty()) {
+        QMessageBox::warning(this, "Error", "SHA box is empty!");
+        return;
+    }
+
+    pendingView->addItem(shaHashString);
+    QByteArray shaHash = QByteArray::fromHex(shaHashString.toAscii());
+    emit(retrieveFileByID(shaHash, peerName, routingMap[peerName], HOP_LIMIT));
+}
+
+void ChatDialog::transferComplete(QByteArray fileID, QString fileName) {
+    QString fileIDString = fileID.toHex();
+    qDebug() << "Transfer complete for " << fileIDString;
+
+    QList<QListWidgetItem*> list = pendingView->findItems(fileIDString, Qt::MatchExactly);
+    if (list.size() != 1) {
+        qDebug() << "UI transfers pending list could not find string " << fileIDString;
+        return;
+    }
+
+    QListWidgetItem* item = list.at(0);
+    pendingView->removeItemWidget(item);
+    delete item;
+
+    shareView->addItem(fileName);
+    fileManager->addFile(fileName);
 }
 
 void ChatDialog::openFileDialog() {
@@ -136,11 +207,9 @@ void ChatDialog::openFileDialog() {
         fileDialog->hide();
         for (int i = 0; i < fileNames.size(); i++) {
             qDebug() << fileNames.at(i) << "\n";
-            File file(fileNames.at(i));
 
             shareView->addItem(fileNames.at(i));
-            if (!sharedFiles.contains(file))
-                sharedFiles.append(file);
+            fileManager->addFile(fileNames.at(i));
         }
     }
 }
@@ -310,8 +379,10 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
             messages[peerName].push_back(message);
 
             // Add origin/sender to routing map
-            if (!routingMap.contains(peerName))
+            if (!routingMap.contains(peerName)) {
                 peerNameList->addItem(peerName);
+                nodeToAskLine->addItem(peerName);
+            }
             routingMap[peerName] = senderPeer;
             printRoutingMap(routingMap);
 
@@ -322,8 +393,7 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
             spreadRumor(senderPeer, peerName, message, messages[peerName].size());
             return 0;
         } else if (seqNo < localSeqNo) {
-            if (isDirect) {
-                qDebug() << "Received a direct message, updating map!";
+            if (isDirect) {                
                 routingMap[peerName] = senderPeer;
             }
             return 1; // This message has already been received
@@ -350,11 +420,8 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
             while (1);
         }
     }
-}
 
-// Returns 0 for Message, 1 for Status, -1 for error
-int ChatDialog::parseMessage(QByteArray *serializedMessage, QHostAddress sender, quint16 senderPort) {
-    messageHandler->parse(serializedMessage, sender, senderPort, messages, routingMap);
+    return 0;
 }
 
 void ChatDialog::receiveMessage() {
@@ -366,7 +433,7 @@ void ChatDialog::receiveMessage() {
 
         sock->readDatagram(datagram->data(), datagram->size(), &sender, &senderPort);
         
-        parseMessage(datagram, sender, senderPort);
+        messageHandler->parse(datagram, sender, senderPort, messages, routingMap);
     }
 }
 
@@ -379,11 +446,46 @@ void ChatDialog::printMap(QVariantMap map, QString hostName) {
 }
 
 void ChatDialog::printRoutingMap(QMap<QString, Peer> map) {
+    /*
     QMap<QString, Peer>::iterator it;
     qDebug() << "Routing map for localhost:";
     for (it = map.begin(); it != map.end(); ++it) {
         qDebug() << it.key() << ":" << it.value().hostAddress << it.value().port;
     }
+    */
+}
+
+void ChatDialog::handleBlockRequest(QString dest, quint32 hopLimit, QString originName, QByteArray requestedBlock) {
+    if (!routingMap.contains(dest)) {
+        qDebug() << dest << "is not in my routing map!";
+        return;
+    }
+
+    qDebug() << "Entered handleBlockRequest";
+
+    QByteArray data = fileManager->getBlockByHash(requestedBlock);
+    if (data.isEmpty()) {
+        qDebug() << "Requested block not found!";
+        return;
+    }
+
+    /*
+    QTime dieTime= QTime::currentTime().addSecs(1);
+    while( QTime::currentTime() < dieTime )
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    */
+
+    sock->sendBlockReply(localhostName, originName, requestedBlock, data, routingMap[originName], hopLimit);
+}
+
+void ChatDialog::sendBlockRequest(QByteArray block, QString originName, quint32 blockID) {
+    //qDebug() << "Sending block request for block " << blockID;
+    if (!routingMap.contains(originName)) {
+        qDebug() << originName << "is not in my routing map!";
+        return;
+    }
+
+    sock->sendBlockRequest(localhostName, originName, block, routingMap[originName], HOP_LIMIT);
 }
 
 int main(int argc, char **argv)

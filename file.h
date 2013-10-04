@@ -4,16 +4,18 @@
 #include <QByteArray>
 #include <QString>
 #include <QFile>
+#include <QMap>
 
 class File
 {
 public:
     static const int BLOCK_SIZE;
+    static const int SHA_SIZE;
 
     QString fileName;
 
     File();
-    File(QString fileName);
+    File(QString fileName, QMap<QByteArray, QByteArray> *hashToBlock, QMap<QByteArray, QByteArray> *blockToHash);
     bool operator==(const File& other) const;
 
 private:    
@@ -23,7 +25,8 @@ private:
     QByteArray contents;
 
     int parseFile();
-    QByteArray hashFile(QByteArray contents, int blockSize);
+    QByteArray hashFile(QByteArray contents, int blockSize, QMap<QByteArray, QByteArray> *hashToBlock,
+                        QMap<QByteArray, QByteArray> *blockToHash);
 };
 
 #endif // FILE_H

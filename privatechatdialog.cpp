@@ -38,8 +38,7 @@ PrivateChatDialog::PrivateChatDialog(QWidget *parent, QString peerName, QString 
     show();
 }
 
-void PrivateChatDialog::buttonClicked() {
-    qDebug() << "got into buttonClicked";
+void PrivateChatDialog::buttonClicked() {    
     QString message = textline->toPlainText();
     textview->append("[" + localhostName + "]: " + message);
     textline->clear();
