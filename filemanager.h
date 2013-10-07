@@ -43,6 +43,8 @@ private:
     // Blocklist received for a fileID request
     QMap<QByteArray, QByteArray> idToBlocklist;
 
+    QMap<QByteArray, QVector<QByteArray> > idToBlocklistArray;
+
     // Keep a pointer to the next block that has to be requested for a fileID in transfer
     QMap<QByteArray, int> blockNumber;
 
@@ -56,7 +58,8 @@ private:
     QMap<QByteArray, QByteArray> blockToHash;
     QMap<QByteArray, QByteArray> belongsTo;
 
-    int parseBlocklistSendRequests(QByteArray blocklist, QString originName);
+    void sendRequest(QString originName, int blockNo, QByteArray fileID);
+    int parseBlocklist(QByteArray blocklist, QString originName, QByteArray fileID);
     QByteArray getFileID(QByteArray block);
     bool checkSHA(QByteArray hash, QByteArray data);
     void completeTransfer(QByteArray fileID);

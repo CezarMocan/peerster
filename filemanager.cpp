@@ -1,5 +1,6 @@
 #include <QtCrypto>
 #include <QFile>
+#include <QDir>
 
 #include "filemanager.h"
 
@@ -39,8 +40,9 @@ void FileManager::gotNewBlockResponse(QString originName, QByteArray repliedBloc
 
     if (repliedBlock == fileID) {
         idToBlocklist.insert(fileID, data);
-        fileBlockSize[fileID] = parseBlocklistSendRequests(data, originName);
+        fileBlockSize[fileID] = parseBlocklist(data, originName, fileID);
         qDebug() << "fileBlockSize is " << fileBlockSize[fileID];
+        sendRequest(originName, 0, fileID);
     } else {
         qDebug() << "PULAPULAPULA!!!";
 
@@ -52,16 +54,24 @@ void FileManager::gotNewBlockResponse(QString originName, QByteArray repliedBloc
         int position = blockNumber[repliedBlock];
         qDebug() << "Position is:" << position;
         qDebug() << "File ID is: " << fileID.toHex();
-//        if (blocksReceived[fileID][position].isEmpty()) {
-            blocksReceived[fileID][position] = data;
-            fileBlockSize[fileID]--;
-            qDebug() << "fileBlockSize for current file is: " << fileBlockSize[fileID];
-            if (fileBlockSize[fileID] == 0) {
-                completeTransfer(fileID);
-            }
-//        }
+
+        blocksReceived[fileID][position] = data;
+        fileBlockSize[fileID]--;
+        qDebug() << "fileBlockSize for current file is: " << fileBlockSize[fileID];
+
+        if (fileBlockSize[fileID] == 0) {
+            completeTransfer(fileID);
+            return;
+        }
+
+        sendRequest(originName, position + 1, fileID);
 
     }
+}
+
+void FileManager::sendRequest(QString originName, int blockNo, QByteArray fileID) {
+    QByteArray block = idToBlocklistArray[fileID][blockNo];
+    emit blockReadyForSending(block, originName, blockNo);
 }
 
 void FileManager::completeTransfer(QByteArray fileID) {
@@ -74,17 +84,17 @@ void FileManager::completeTransfer(QByteArray fileID) {
 
     qDebug() << "WOOOO Completely received file" << noReceivedFiles;
 
-    QString fileName = "received_file_" + QString::number(noReceivedFiles);
+    QString fileName = QDir::currentPath() + "/" + localhostName + "received_file_" + QString::number(noReceivedFiles);
 
     QFile newFile(fileName);
     newFile.open(QIODevice::WriteOnly);
     newFile.write(totalFile);
-    newFile.close();
+    newFile.close();    
 
     emit completedTransfer(fileID, fileName);
 }
 
-int FileManager::parseBlocklistSendRequests(QByteArray blocklist, QString originName) {
+int FileManager::parseBlocklist(QByteArray blocklist, QString originName, QByteArray fileID) {
     int blockNo = 0;
     QByteArray initialBlocklist = blocklist;
     while (blocklist.size() != 0) {
@@ -92,8 +102,10 @@ int FileManager::parseBlocklistSendRequests(QByteArray blocklist, QString origin
         belongsTo[block] = initialBlocklist;
 
         blockNumber[block] = blockNo;
+        idToBlocklistArray[fileID].push_back(block);
+
         blocklist = blocklist.mid(File::SHA_SIZE);
-        emit blockReadyForSending(block, originName, blockNo);
+        //emit blockReadyForSending(block, originName, blockNo);
         blockNo++;
     }
 
