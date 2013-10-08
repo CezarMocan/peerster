@@ -10,17 +10,48 @@ FileManager::FileManager(NetSocket* sock, QString localhostName) {
     this->noReceivedFiles = 0;
 }
 
+QList<QPair<QString, QByteArray> > FileManager::searchByKeyword(QString keywords) {
+    QList<QPair<QString, QByteArray> > results;
+    QStringList args = keywords.split(QRegExp("\\s+"));
+
+    for (int i = 0; i < sharedFiles.size(); i++) {
+        QString fileName = sharedFiles.at(i).fileName;
+        bool flag = 0;
+        for (int j = 0; j < args.size(); j++) {
+            if (fileName.contains(args.at(j))) {
+                flag = 1;
+                break;
+            }
+        }
+
+        if (flag) {
+            results.append(QPair<QString, QByteArray>(fileName, nameToId[fileName]));
+        }
+    }
+
+    qDebug() << "Found " << results.size() << " results";
+    return results;
+}
+
 void FileManager::addFile(QString fileName) {
     File file(fileName, &hashToBlock, &blockToHash);
     sharedFiles.append(file);
+    nameToId.insert(fileName, file.getFileID());
 }
 
 QByteArray FileManager::getBlockByHash(QByteArray blockHash) {
     return hashToBlock[blockHash];
 }
 
-void FileManager::retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit) {
+void FileManager::retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName) {
+    if (idToBlocklist.contains(fileID)) {
+        qDebug() << "Already have file!";
+        return;
+    }
     blocksReceived[fileID].resize(300); // TODO: add constant for this
+    if (fileName != NULL) {
+        idToName.insert(fileID, fileName);
+    }
     qDebug() << "Sending request for hash " << fileID.toHex() << "to peer " << peerName;
     sock->sendBlockRequest(localhostName, peerName, fileID, firstHop, hopLimit);
 }
@@ -84,7 +115,13 @@ void FileManager::completeTransfer(QByteArray fileID) {
 
     qDebug() << "WOOOO Completely received file" << noReceivedFiles;
 
-    QString fileName = QDir::currentPath() + "/" + localhostName + "received_file_" + QString::number(noReceivedFiles);
+    QString fileName;
+
+    if (idToName.contains(fileID)) {
+        fileName = QDir::currentPath() + "/" + idToName[fileID];
+    } else {
+        fileName = QDir::currentPath() + "/" + localhostName + "_received_file_" + QString::number(noReceivedFiles);
+    }
 
     QFile newFile(fileName);
     newFile.open(QIODevice::WriteOnly);

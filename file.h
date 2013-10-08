@@ -17,6 +17,7 @@ public:
     File();
     File(QString fileName, QMap<QByteArray, QByteArray> *hashToBlock, QMap<QByteArray, QByteArray> *blockToHash);
     bool operator==(const File& other) const;
+    QByteArray getFileID();
 
 private:    
     qint64 fileSize;

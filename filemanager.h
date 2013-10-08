@@ -17,6 +17,7 @@ public:
     void addFile(QString fileName);
     QByteArray getBlockByHash(QByteArray blockHash);
     //File keywordSearch(QStringList keywords);
+    QList<QPair<QString, QByteArray> > searchByKeyword(QString keywords);
 
 signals:
     void newBlockToSend(QByteArray fileID, QByteArray block);
@@ -24,7 +25,7 @@ signals:
     void completedTransfer(QByteArray fileID, QString fileName);
 
 public slots:
-    void retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit);
+    void retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName = NULL);
     void gotNewBlockResponse(QString originName, QByteArray repliedBlock, QByteArray data);
 
 private:
@@ -53,6 +54,11 @@ private:
 
     // Keep track of all the blocks received until now for a fileID
     QMap<QByteArray, QVector<QByteArray> > blocksReceived;
+
+    // Remember file name, if request comes from a keyword search
+    QMap<QByteArray, QString> idToName;
+
+    QMap<QString, QByteArray> nameToId;
 
     QMap<QByteArray, QByteArray> hashToBlock;
     QMap<QByteArray, QByteArray> blockToHash;

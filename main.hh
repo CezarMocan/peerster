@@ -22,6 +22,8 @@
 #include "privatechatdialog.h"
 #include "messagehandler.h"
 #include "filemanager.h"
+#include "downloadsdialog.h"
+#include "keywordtimer.h"
 
 class ChatDialog : public QDialog
 {
@@ -36,6 +38,9 @@ public:
     static const int ANTI_ENTROPY_FREQ;
     static const int ROUTE_MESSAGE_FREQ;
     static const quint32 HOP_LIMIT;
+    static const quint32 BUDGET_LIMIT;
+    static const int KEYWORD_SEARCH_FREQ;
+    static const int KEYWORD_SEARCH_MAX_RESULTS;
 
     // Localhost info
     Peer *localhost;
@@ -50,7 +55,7 @@ public:
 signals:
     void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
     void receivedPrivateMessage(QString peerName, QString message);
-    void retrieveFileByID(QByteArray shaHash, QString peerName, Peer firstHop, quint32 hopLimit);
+    void retrieveFileByID(QByteArray shaHash, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName = NULL);
 
 public slots:
     // Slot for UI - what to do when Return key is pressed
@@ -87,11 +92,23 @@ public slots:
     // Slot for search by SHA button
     void searchByShaClicked();
 
+    // Slot for search by keyword button
+    void searchByKeywordClicked();
+
     // Slot for FileManager's signal for when a block request is ready to send
     void sendBlockRequest(QByteArray block, QString originName, quint32 blockID);
 
     // Move file from pending list to shared files list when transfer is complete
     void transferComplete(QByteArray fileID, QString fileName);
+
+    // Periodically called by the timer for sending keyword search requests
+    void newKeywordSearchRequest();
+
+    void parseSearchRequest(QString originName, QString keywords, quint32 budget);
+
+    void parseSearchReply(QString originName, QString keywords, QVariantList matchNames, QVariantList matchIDs);
+
+    void downloadRequest(QString fileName, QByteArray shaHash, QString owner);
 
 private:
     // Network socket for communicating with the other clients
@@ -105,6 +122,9 @@ private:
 
     // Port of the last added peer
     QString lastAddedPort;
+
+    // Window for managing downloads
+    DownloadsDialog *downloadsDialog;
 
     // UI Objects
     QLineEdit *addressLine;
@@ -132,12 +152,20 @@ private:
     QLabel *nodeToAskLabel;
     QPushButton *shaSearchButton;
 
+    QLineEdit *keywordSearchLine;
+    QPushButton *keywordSearchButton;
+
     // List of current peers
     QVector<Peer> peerList;
     QVector<QTimer*> peerTimers;
 
     // Map of peer names to their corresponding UI private chat windows
     QMap<QString, PrivateChatDialog*> privateChatMap;
+
+    // Remember budget and timers for all the search queries
+    QMap<QString, quint32> keywordSearchBudget;
+    QMap<QString, KeywordTimer*> keywordSearchTimer;
+    QMap<QString, quint32> keywordSearchResults;
 
     // no forward option
     bool noForwardFlag;
@@ -156,6 +184,9 @@ private:
 
     // Rumormongering
     void spreadRumor(Peer previous, QString from, QString message, int position);
+
+    // Send the keyword search request
+    void sendKeywordSearchRequest(QString keyword, quint32 budget);
 
     // Print different kinds of maps - debug purposes
     void printMap(QVariantMap map, QString hostName);

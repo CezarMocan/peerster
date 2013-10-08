@@ -17,7 +17,9 @@ HEADERS += main.hh \
     multilineedit.h \
     file.h \
     messagehandler.h \
-    filemanager.h
+    filemanager.h \
+    downloadsdialog.h \
+    keywordtimer.h
 SOURCES += main.cc \
     netsocket.cc \
     peer.cc \
@@ -25,6 +27,8 @@ SOURCES += main.cc \
     multilineedit.cpp \
     file.cpp \
     messagehandler.cpp \
-    filemanager.cpp
+    filemanager.cpp \
+    downloadsdialog.cpp \
+    keywordtimer.cpp
 
 FORMS +=

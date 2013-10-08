@@ -27,6 +27,12 @@ public:
     static const QString DEFAULT_BLOCK_REQUEST_KEY;
     static const QString DEFAULT_BLOCK_REPLY_KEY;
     static const QString DEFAULT_DATA_KEY;
+    static const QString DEFAULT_SEARCH_KEY;
+    static const QString DEFAULT_BUDGET_KEY;
+    static const QString DEFAULT_SEARCH_REPLY_KEY;
+    static const QString DEFAULT_SEARCH_REPLY_NAMES_KEY;
+    static const QString DEFAULT_SEARCH_REPLY_IDS_KEY;
+
 
     static const quint32 SEND_PRIVATE;
     static const quint32 RECEIVE_PRIVATE;
@@ -52,6 +58,11 @@ public:
     void sendBlockRequest(QString originName, QString dest, QByteArray requestedBlock, Peer firstHop, quint32 hopLimit);
     void sendBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, Peer firstHop, quint32 hopLimit);
 
+    void sendSearchRequest(QString originName, QString keyword, quint32 budget, Peer firstHop);
+    void sendSearchReply(QString originName, QString dest, quint32 hopLimit, QString keywords, QList<QPair<QString, QByteArray> > searchResults, Peer firstHop);
+
+    void sendVariantMap(QVariantMap variantMap, Peer firstHop);
+
     void sendStatus(Peer from, QMap<QString, QVector<QString> > messages);
 
     // Write current message to all ports on localhost
@@ -68,7 +79,12 @@ private:
     QVariantMap serializePrivateMessage(QString originName, QString peerName, QString message, quint32 hopLimit);
     QVariantMap serializeBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, quint32 hopLimit);
     QVariantMap serializeBlockRequest(QString originName, QString dest, QByteArray requestedBlock, quint32 hopLimit);
-    QByteArray serializeVariantMap(QVariantMap map);        
+    QVariantMap serializeSearchRequest(QString originName, QString keyword, quint32 budget);
+    QVariantMap serializeSearchReply(QString originName, QString dest, quint32 hopLimit, QString keywords, QList<QPair<QString, QByteArray> > searchResults);
+
+    QByteArray serializeVariantMap(QVariantMap map);
+
+    void printMap(QVariantMap map);
 };
 
 #endif

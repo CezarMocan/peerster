@@ -17,6 +17,12 @@ const QString NetSocket::DEFAULT_LAST_PORT_KEY = QString("LastPort");
 const QString NetSocket::DEFAULT_BLOCK_REQUEST_KEY = QString("BlockRequest");
 const QString NetSocket::DEFAULT_BLOCK_REPLY_KEY = QString("BlockReply");
 const QString NetSocket::DEFAULT_DATA_KEY = QString("Data");
+const QString NetSocket::DEFAULT_SEARCH_KEY = QString("Search");
+const QString NetSocket::DEFAULT_BUDGET_KEY = QString("Budget");
+const QString NetSocket::DEFAULT_SEARCH_REPLY_KEY = QString("SearchReply");
+const QString NetSocket::DEFAULT_SEARCH_REPLY_NAMES_KEY = QString("MatchNames");
+const QString NetSocket::DEFAULT_SEARCH_REPLY_IDS_KEY = QString("MatchIDs");
+
 
 const quint32 NetSocket::SEND_PRIVATE = 200000001;
 const quint32 NetSocket::RECEIVE_PRIVATE = 200000002;
@@ -104,13 +110,13 @@ QVariantMap NetSocket::serializePrivateMessage(QString originName, QString peerN
     return textVariantMap;
 }
 
-QByteArray NetSocket::serializeVariantMap(QVariantMap map) {
-    QByteArray *serializedMessage = new QByteArray();
+QByteArray NetSocket::serializeVariantMap(QVariantMap map) {    
+    QByteArray serializedMessage;
 
-    QDataStream *serializer = new QDataStream(serializedMessage, QIODevice::WriteOnly);
-    (*serializer) << map;
+    QDataStream serializer(&serializedMessage, QIODevice::WriteOnly);
+    serializer << map;
 
-    return (*serializedMessage);
+    return serializedMessage;
 }
 
 QVariantMap NetSocket::serializeBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, quint32 hopLimit) {
@@ -134,6 +140,36 @@ QVariantMap NetSocket::serializeBlockRequest(QString originName, QString dest, Q
     return blockRequestVariantMap;
 }
 
+QVariantMap NetSocket::serializeSearchRequest(QString originName, QString keyword, quint32 budget) {
+    QVariantMap variantMap;
+    variantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(originName));
+    variantMap.insert(DEFAULT_SEARCH_KEY, QVariant(keyword));
+    variantMap.insert(DEFAULT_BUDGET_KEY, QVariant(budget));
+
+    return variantMap;
+}
+
+QVariantMap NetSocket::serializeSearchReply(QString originName, QString dest, quint32 hopLimit, QString keywords,
+                                 QList<QPair<QString, QByteArray> > searchResults) {
+    QVariantMap variantMap;
+    QVariantList nameList, idList;
+
+    variantMap.insert(DEFAULT_DEST_KEY, QVariant(dest));
+    variantMap.insert(DEFAULT_ORIGIN_KEY, QVariant(originName));
+    variantMap.insert(DEFAULT_HOP_LIMIT_KEY, QVariant(hopLimit));
+    variantMap.insert(DEFAULT_SEARCH_REPLY_KEY, QVariant(keywords));
+
+    for (int i = 0; i < searchResults.size(); i++) {
+        qDebug() << "SerializeSearchReply" << i << searchResults.at(i).first << searchResults.at(i).second.toHex();
+        nameList.append(QVariant(searchResults.at(i).first));
+        idList.append(QVariant(searchResults.at(i).second));
+    }
+
+    variantMap.insert(DEFAULT_SEARCH_REPLY_NAMES_KEY, nameList);
+    variantMap.insert(DEFAULT_SEARCH_REPLY_IDS_KEY, idList);
+
+    return variantMap;
+}
 
 // Sends message to all peer list
 void NetSocket::sendMessage(QString from, QString message, int position, QVector<Peer> peerList) {
@@ -176,6 +212,24 @@ void NetSocket::sendBlockReply(QString originName, QString dest, QByteArray repl
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 
+void NetSocket::sendSearchRequest(QString originName, QString keyword, quint32 budget, Peer firstHop) {
+    QByteArray serializedMessage = serializeVariantMap(serializeSearchRequest(originName, keyword, budget));
+    qDebug() << "Sock: Sending search request to " << firstHop.port << " with budget " << budget;
+    writeDatagramSinglePeer(&serializedMessage, firstHop);
+}
+
+void NetSocket::sendSearchReply(QString originName, QString dest, quint32 hopLimit, QString keywords,
+                                QList<QPair<QString, QByteArray> > searchResults, Peer firstHop) {
+
+    QByteArray serializedMessage = serializeVariantMap(serializeSearchReply(originName, dest, hopLimit, keywords, searchResults));
+    qDebug() << "Sock: Sending search reply to " << dest << "from " << originName;
+    writeDatagramSinglePeer(&serializedMessage, firstHop);
+}
+
+void NetSocket::sendVariantMap(QVariantMap variantMap, Peer firstHop) {
+    QByteArray serializedMessage = serializeVariantMap(variantMap);
+    writeDatagramSinglePeer(&serializedMessage, firstHop);
+}
 
 void NetSocket::sendStatus(Peer from, QMap<QString, QVector<QString> > messages) {
     QVariantMap status = createStatusMap(messages);
@@ -208,5 +262,16 @@ void NetSocket::writeDatagramSinglePeer(QByteArray *serializedMessage, Peer to) 
         qDebug() << "Failed to send to host: " << to.hostAddress << ":" << to.port;
     }
 }
+
+void NetSocket::printMap(QVariantMap map) {
+    QVariantMap::iterator it;
+    qDebug() << "Printing received variant map\n";
+    for (it = map.begin(); it != map.end(); ++it) {
+        qDebug() << "    " << it.key() << it.value();
+    }
+
+    qDebug() << "\n\n";
+}
+
 
 

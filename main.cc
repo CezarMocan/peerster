@@ -17,6 +17,9 @@
 const int ChatDialog::ANTI_ENTROPY_FREQ = 2000;
 const int ChatDialog::ROUTE_MESSAGE_FREQ = 10000;
 const quint32 ChatDialog::HOP_LIMIT = 10;
+const quint32 ChatDialog::BUDGET_LIMIT = 100;
+const int ChatDialog::KEYWORD_SEARCH_FREQ = 1000;
+const int ChatDialog::KEYWORD_SEARCH_MAX_RESULTS = 10;
 
 ChatDialog::ChatDialog(bool noForwardFlag)
 {
@@ -39,6 +42,10 @@ ChatDialog::ChatDialog(bool noForwardFlag)
     connect(messageHandler, SIGNAL(gotNewBlockRequest(QString, quint32, QString, QByteArray)),
             this, SLOT(handleBlockRequest(QString, quint32, QString, QByteArray)));
     connect(messageHandler, SIGNAL(handlerAddPeerToList(Peer)), this, SLOT(addPeerToList(Peer)));
+    connect(messageHandler, SIGNAL(gotNewSearchRequest(QString,QString,quint32)),
+            this, SLOT(parseSearchRequest(QString, QString, quint32)));
+    connect(messageHandler, SIGNAL(gotNewSearchReply(QString,QString,QVariantList,QVariantList)),
+            this, SLOT(parseSearchReply(QString,QString,QVariantList,QVariantList)));
 
     fileManager = new FileManager(sock, localhostName);
     connect(this, SIGNAL(retrieveFileByID(QByteArray, QString, Peer, quint32)),
@@ -62,12 +69,12 @@ ChatDialog::ChatDialog(bool noForwardFlag)
 
     QTimer *routeMessageTimer = new QTimer(this);
     connect(routeMessageTimer, SIGNAL(timeout()), this, SLOT(sendRouteMessage()));
-    routeMessageTimer->start(ROUTE_MESSAGE_FREQ);
+    routeMessageTimer->start(ROUTE_MESSAGE_FREQ);    
 
     connect(this, SIGNAL(gotNewMessage(Peer, QString, QString, quint32, quint32)),
             this, SLOT(addReceivedMessage(Peer, QString, QString, quint32, quint32)));
 
-    sendRouteMessage();
+    sendRouteMessage();    
 }
 
 void ChatDialog::setUpUI() {
@@ -118,6 +125,14 @@ void ChatDialog::setUpUI() {
     shaSearchButton = new QPushButton("Search!", this);
     connect(shaSearchButton, SIGNAL(clicked()), this, SLOT(searchByShaClicked()));
 
+    downloadsDialog = new DownloadsDialog(this);
+    connect(downloadsDialog, SIGNAL(downloadRequest(QString,QByteArray,QString)),
+            this, SLOT(downloadRequest(QString,QByteArray,QString)));
+
+    keywordSearchLine = new QLineEdit(this);
+    keywordSearchButton = new QPushButton("Search by keyword", this);
+    connect(keywordSearchButton, SIGNAL(clicked()), this, SLOT(searchByKeywordClicked()));
+
     QHBoxLayout *addressLayout = new QHBoxLayout();
     addressLayout->addWidget(addressLabel);
     addressLayout->addWidget(addressLine);
@@ -146,20 +161,108 @@ void ChatDialog::setUpUI() {
 
     QVBoxLayout *transferSearchLayout = new QVBoxLayout();
     transferSearchLayout->addWidget(pendingLabel, 1, Qt::AlignCenter);
-    transferSearchLayout->addWidget(pendingView, 50);
+    transferSearchLayout->addWidget(pendingView, 20);
     transferSearchLayout->addWidget(searchBySHA, 1, Qt::AlignCenter);
     transferSearchLayout->addWidget(shaSearchLine, 1);
-    transferSearchLayout->addWidget(nodeToAskLabel, 1);
+    transferSearchLayout->addWidget(nodeToAskLabel, 1, Qt::AlignCenter);
     transferSearchLayout->addWidget(nodeToAskLine, 1);
     transferSearchLayout->addWidget(shaSearchButton, 1);
 
+    QVBoxLayout *keywordSearchLayout = new QVBoxLayout();
+    keywordSearchLayout->addWidget(keywordSearchLine, 1, Qt::AlignCenter);
+    keywordSearchLayout->addWidget(keywordSearchButton, 1, Qt::AlignCenter);
+
     QHBoxLayout *layout = new QHBoxLayout();
     layout->addLayout(textLayout, 2);
-    layout->addLayout(peerLayout, 1);
-    layout->addLayout(shareLayout, 1);
-    layout->addLayout(transferSearchLayout, 1);
+    layout->addLayout(peerLayout, 2);
+    layout->addLayout(transferSearchLayout, 2);
+    layout->addLayout(shareLayout, 2);
+    layout->addLayout(keywordSearchLayout, 4);
 
     setLayout(layout);
+}
+
+void ChatDialog::downloadRequest(QString fileName, QByteArray shaHash, QString owner) {
+    QMessageBox::warning(this, "Success", "Starting download for " + fileName);
+    pendingView->addItem(shaHash.toHex());
+    emit(retrieveFileByID(shaHash, owner, routingMap[owner], HOP_LIMIT, fileName));
+}
+
+void ChatDialog::parseSearchReply(QString originName, QString keywords, QVariantList matchNames, QVariantList matchIDs) {
+    // add the stuff to table
+    // disconnect timers if I have more than 10 results
+    if (keywordSearchResults[keywords] > 10)
+        return;
+
+    keywordSearchResults[keywords] += matchNames.size();
+
+    if (keywordSearchResults[keywords] > 10)
+        keywordSearchTimer[keywords]->disconnect();
+
+    //TODO: finish
+    for (int i = 0; i < matchNames.size(); i++) {
+        QString currName = matchNames.at(i).toString();
+        QString currID = matchIDs.at(i).toByteArray().toHex();
+        downloadsDialog->append(currName, currID, originName);
+    }
+}
+
+void ChatDialog::parseSearchRequest(QString originName, QString keywords, quint32 budget) {
+    QList<QPair<QString, QByteArray> > searchResults = fileManager->searchByKeyword(keywords);
+    qDebug() << "In main: got" << searchResults.size() << "results";
+    sendKeywordSearchRequest(keywords, budget);
+    qDebug() << "Sent requests to neighbours with budget " << budget;
+    qDebug() << "ChatDialog: origin is " << originName;
+
+    if (searchResults.size() != 0)
+        sock->sendSearchReply(localhostName, originName, HOP_LIMIT, keywords, searchResults, routingMap[originName]);
+}
+
+void ChatDialog::sendKeywordSearchRequest(QString keyword, quint32 budget) {
+    budget--;
+
+    if (budget == 0)
+        return;
+
+    for (int i = 0; i < peerNameList->count(); i++) {
+        int peerBudget = budget / peerNameList->count() + (i < budget % peerNameList->count());
+        QString currentPeerName = peerNameList->item(i)->text();
+        if (peerBudget > 0)
+            sock->sendSearchRequest(localhostName, keyword, peerBudget, routingMap[currentPeerName]);
+    }
+}
+
+void ChatDialog::newKeywordSearchRequest() {
+    QObject *signalSender = sender();
+
+    KeywordTimer *kTimer = static_cast<KeywordTimer*>(signalSender);
+    QString keyword = kTimer->getKeyword();
+
+    if (keywordSearchBudget[keyword] > BUDGET_LIMIT || keywordSearchResults[keyword] > KEYWORD_SEARCH_MAX_RESULTS) {
+        keywordSearchTimer[keyword]->disconnect();
+        return;
+    }
+
+    sendKeywordSearchRequest(keyword, keywordSearchBudget[keyword]);
+
+    keywordSearchBudget[keyword] = 2 * keywordSearchBudget[keyword];
+}
+
+void ChatDialog::searchByKeywordClicked() {
+    QString keywords = keywordSearchLine->text();
+    qDebug() << keywords;
+    if (keywords.isEmpty()) {
+        QMessageBox::warning(this, "Error", "Search box empty!");
+        return;
+    }
+
+    keywordSearchBudget[keywords] = 2;
+    keywordSearchResults[keywords] = 0;
+    keywordSearchTimer[keywords] = new KeywordTimer(this, keywords);
+    connect(keywordSearchTimer[keywords], SIGNAL(timeout()), this, SLOT(newKeywordSearchRequest()));
+    keywordSearchTimer[keywords]->start(KEYWORD_SEARCH_FREQ);
+
+    downloadsDialog->showDialog();
 }
 
 void ChatDialog::searchByShaClicked() {
@@ -380,6 +483,7 @@ int ChatDialog::addReceivedMessage(Peer senderPeer, QString peerName, QString me
 
             // Add origin/sender to routing map
             if (!routingMap.contains(peerName)) {
+                //if (peerName != localhostName)
                 peerNameList->addItem(peerName);
                 nodeToAskLine->addItem(peerName);
             }

@@ -151,6 +151,34 @@ void MessageHandler::parseBlockResponse(QVariantMap textVariantMap, Peer current
     }
 }
 
+void MessageHandler::parseSearchRequest(QVariantMap textVariantMap, Peer currentPeer) {
+    QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
+    QString keywords = textVariantMap[sock->DEFAULT_SEARCH_KEY].toString();
+    quint32 budget = textVariantMap[sock->DEFAULT_BUDGET_KEY].toUInt();
+
+    qDebug() << "MessageHandler: origin is " << originName;
+    emit(gotNewSearchRequest(originName, keywords, budget));
+}
+
+void MessageHandler::parseSearchReply(QVariantMap textVariantMap, Peer currentPeer) {
+    QString dest = textVariantMap[sock->DEFAULT_DEST_KEY].toString();
+    quint32 hopLimit = (textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY].toInt()) - 1;
+    QString originName = textVariantMap[sock->DEFAULT_ORIGIN_KEY].toString();
+    QString keywords = textVariantMap[sock->DEFAULT_SEARCH_REPLY_KEY].toString();
+    QVariantList matchNames = textVariantMap[sock->DEFAULT_SEARCH_REPLY_NAMES_KEY].toList();
+    QVariantList matchIDs = textVariantMap[sock->DEFAULT_SEARCH_REPLY_IDS_KEY].toList();
+
+    if (dest == localhostName) {
+        emit(gotNewSearchReply(originName, keywords, matchNames, matchIDs));
+    } else {
+        if (!checkForward(hopLimit, dest))
+            return;
+
+        textVariantMap[sock->DEFAULT_HOP_LIMIT_KEY] = hopLimit;
+        sock->sendVariantMap(textVariantMap, routingMap[dest]);
+    }
+}
+
 void MessageHandler::parse(QByteArray *serializedMessage, QHostAddress sender, quint16 senderPort, QMap<QString, QVector<QString> > messages, QMap<QString, Peer> routingMap) {
     this->messages = messages;
     this->routingMap = routingMap;
@@ -160,8 +188,7 @@ void MessageHandler::parse(QByteArray *serializedMessage, QHostAddress sender, q
     (*deserializer) >> textVariantMap;    
 
     Peer currentPeer(sender, senderPort);
-    emit handlerAddPeerToList(currentPeer);
-    //parent->addPeerToList(currentPeer);
+    emit handlerAddPeerToList(currentPeer);    
 
     if (textVariantMap.contains(sock->DEFAULT_SEQ_NO_KEY)) { // Rumor chat or route message
         parseRumorMessage(textVariantMap, currentPeer);
@@ -188,8 +215,18 @@ void MessageHandler::parse(QByteArray *serializedMessage, QHostAddress sender, q
         return;
     }
 
+    if (textVariantMap.contains(sock->DEFAULT_SEARCH_KEY)) {
+        parseSearchRequest(textVariantMap, currentPeer);
+        return;
+    }
+
+    if (textVariantMap.contains(sock->DEFAULT_SEARCH_REPLY_KEY)) {
+        parseSearchReply(textVariantMap, currentPeer);
+        return;
+    }
+
     qDebug() << "Received bad map from: " << sender << " " << senderPort;
-    //printMap(textVariantMap, "bad_map_guy");
+    printMap(textVariantMap);
     return;
 }
 

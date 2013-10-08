@@ -24,6 +24,8 @@ signals:
     void gotNewBlockRequest(QString dest, quint32 hopLimit, QString originName, QByteArray requestedBlock);
     void gotNewBlockResponse(QString originName, QByteArray repliedBlock, QByteArray data);
     void handlerAddPeerToList(Peer currentPeer);
+    void gotNewSearchRequest(QString originName, QString keywords, quint32 budget);
+    void gotNewSearchReply(QString originName, QString keywords, QVariantList matchNames, QVariantList matchIDs);
 
 private:
     NetSocket *sock;
@@ -34,10 +36,16 @@ private:
 
 
     void parseRumorMessage(QVariantMap textVariantMap, Peer currentPeer);
+
     void parseStatusMessage(QVariantMap textVariantMap, Peer currentPeer);
+
     void parsePrivateMessage(QVariantMap textVariantMap, Peer currentPeer);
+
     void parseBlockRequest(QVariantMap textVariantMap, Peer currentPeer);
     void parseBlockResponse(QVariantMap textVariantMap, Peer currentPeer);
+
+    void parseSearchRequest(QVariantMap textVariantMap, Peer currentPeer);
+    void parseSearchReply(QVariantMap textVariantMap, Peer currentPeer);
 
     // Check if I have an entry for dest and if hopLimit is greater than 0
     bool checkForward(quint32 hopLimit, QString dest);

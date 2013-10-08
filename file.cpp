@@ -21,6 +21,10 @@ File::File(QString fileName, QMap<QByteArray, QByteArray> *hashToBlock, QMap<QBy
     }
 }
 
+QByteArray File::getFileID() {
+    return fileID;
+}
+
 bool File::operator== (const File& other) const {
     return (fileName == other.fileName);
 }
