@@ -202,19 +202,19 @@ void NetSocket::sendPrivateMessage(QString originName, QString peerName, QString
 
 void NetSocket::sendBlockRequest(QString originName, QString dest, QByteArray requestedBlock, Peer firstHop, quint32 hopLimit) {
     QByteArray serializedMessage = serializeVariantMap(serializeBlockRequest(originName, dest, requestedBlock, hopLimit));
-    qDebug() << "Sock: Sending block request to " << firstHop.port;
+    //qDebug() << "Sock: Sending block request to " << firstHop.port;
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 
 void NetSocket::sendBlockReply(QString originName, QString dest, QByteArray repliedBlock, QByteArray data, Peer firstHop, quint32 hopLimit) {
     QByteArray serializedMessage = serializeVariantMap(serializeBlockReply(originName, dest, repliedBlock, data, hopLimit));
-    qDebug() << "Sock: Sending block reply to " << firstHop.port;
+    //qDebug() << "Sock: Sending block reply to " << firstHop.port;
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 
 void NetSocket::sendSearchRequest(QString originName, QString keyword, quint32 budget, Peer firstHop) {
     QByteArray serializedMessage = serializeVariantMap(serializeSearchRequest(originName, keyword, budget));
-    qDebug() << "Sock: Sending search request to " << firstHop.port << " with budget " << budget;
+    //qDebug() << "Sock: Sending search request to " << firstHop.port << " with budget " << budget;
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 
@@ -222,7 +222,7 @@ void NetSocket::sendSearchReply(QString originName, QString dest, quint32 hopLim
                                 QList<QPair<QString, QByteArray> > searchResults, Peer firstHop) {
 
     QByteArray serializedMessage = serializeVariantMap(serializeSearchReply(originName, dest, hopLimit, keywords, searchResults));
-    qDebug() << "Sock: Sending search reply to " << dest << "from " << originName;
+    //qDebug() << "Sock: Sending search reply to " << dest << "from " << originName;
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 

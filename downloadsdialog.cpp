@@ -45,9 +45,21 @@ DownloadsDialog::DownloadsDialog(QWidget *parent) : QDialog(parent) {
 void DownloadsDialog::append(QString currName, QString currID, QString originName) {
     searchResultsView->setRowCount(searchResultsView->rowCount() + 1);
     int row = searchResultsView->rowCount() - 1;
-    searchResultsView->setItem(row, 0, new QTableWidgetItem(currName));
-    searchResultsView->setItem(row, 1, new QTableWidgetItem(currID));
-    searchResultsView->setItem(row, 2, new QTableWidgetItem(originName));
+
+    QTableWidgetItem *name = new QTableWidgetItem(currName);
+    name->setFlags(name->flags() & (~Qt::ItemIsEditable));
+    QTableWidgetItem *id = new QTableWidgetItem(currID);
+    id->setFlags(id->flags() & (~Qt::ItemIsEditable));
+    QTableWidgetItem *origin = new QTableWidgetItem(originName);
+    origin->setFlags(origin->flags() & (~Qt::ItemIsEditable));
+
+    searchResultsView->setItem(row, 0, name);
+    searchResultsView->setItem(row, 1, id);
+    searchResultsView->setItem(row, 2, origin);
+}
+
+QList<QTableWidgetItem*> DownloadsDialog::findItems(QString item) {
+    return searchResultsView->findItems(item, Qt::MatchExactly);
 }
 
 void DownloadsDialog::tableCellDoubleClicked(int row, int column) {
@@ -61,6 +73,7 @@ void DownloadsDialog::tableCellDoubleClicked(int row, int column) {
 
 void DownloadsDialog::showDialog() {
     searchResultsView->clear();
+    searchResultsView->setRowCount(0);
     show();
     raise();
 }

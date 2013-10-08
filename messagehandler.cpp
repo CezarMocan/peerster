@@ -156,7 +156,7 @@ void MessageHandler::parseSearchRequest(QVariantMap textVariantMap, Peer current
     QString keywords = textVariantMap[sock->DEFAULT_SEARCH_KEY].toString();
     quint32 budget = textVariantMap[sock->DEFAULT_BUDGET_KEY].toUInt();
 
-    qDebug() << "MessageHandler: origin is " << originName;
+    //qDebug() << "MessageHandler: origin is " << originName;
     emit(gotNewSearchRequest(originName, keywords, budget));
 }
 

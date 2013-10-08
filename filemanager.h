@@ -25,7 +25,7 @@ signals:
     void completedTransfer(QByteArray fileID, QString fileName);
 
 public slots:
-    void retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName = NULL);
+    void retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName = "");
     void gotNewBlockResponse(QString originName, QByteArray repliedBlock, QByteArray data);
 
 private:
@@ -58,6 +58,9 @@ private:
     // Remember file name, if request comes from a keyword search
     QMap<QByteArray, QString> idToName;
 
+    // Check if i already have a file
+    QMap<QByteArray, int> presentFileID;
+
     QMap<QString, QByteArray> nameToId;
 
     QMap<QByteArray, QByteArray> hashToBlock;
@@ -69,6 +72,7 @@ private:
     QByteArray getFileID(QByteArray block);
     bool checkSHA(QByteArray hash, QByteArray data);
     void completeTransfer(QByteArray fileID);
+    QString getShortName(QString fullName);
 };
 
 #endif // FILEMANAGER_H

@@ -12,6 +12,7 @@ class DownloadsDialog : public QDialog
 public:
     explicit DownloadsDialog(QWidget *parent = 0);
     void append(QString currName, QString currID, QString originName);
+    QList<QTableWidgetItem*> findItems(QString item);
 
 signals:
     void downloadRequest(QString fileName, QByteArray shaHash, QString owner);

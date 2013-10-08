@@ -55,7 +55,7 @@ public:
 signals:
     void gotNewMessage(Peer currentPeer, QString peerName, QString text, quint32 seqNo, quint32 hopLimit = 0);
     void receivedPrivateMessage(QString peerName, QString message);
-    void retrieveFileByID(QByteArray shaHash, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName = NULL);
+    void retrieveFileByID(QByteArray shaHash, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName = "");
 
 public slots:
     // Slot for UI - what to do when Return key is pressed

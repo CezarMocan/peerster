@@ -10,12 +10,18 @@ FileManager::FileManager(NetSocket* sock, QString localhostName) {
     this->noReceivedFiles = 0;
 }
 
+QString FileManager::getShortName(QString fullName) {
+    int pos = fullName.lastIndexOf("/");
+    return fullName.mid(pos + 1);
+}
+
 QList<QPair<QString, QByteArray> > FileManager::searchByKeyword(QString keywords) {
     QList<QPair<QString, QByteArray> > results;
     QStringList args = keywords.split(QRegExp("\\s+"));
 
     for (int i = 0; i < sharedFiles.size(); i++) {
         QString fileName = sharedFiles.at(i).fileName;
+        QString shortName = getShortName(fileName);
         bool flag = 0;
         for (int j = 0; j < args.size(); j++) {
             if (fileName.contains(args.at(j))) {
@@ -25,11 +31,11 @@ QList<QPair<QString, QByteArray> > FileManager::searchByKeyword(QString keywords
         }
 
         if (flag) {
-            results.append(QPair<QString, QByteArray>(fileName, nameToId[fileName]));
+            results.append(QPair<QString, QByteArray>(shortName, nameToId[fileName]));
         }
     }
 
-    qDebug() << "Found " << results.size() << " results";
+    //qDebug() << "Found " << results.size() << " results";
     return results;
 }
 
@@ -37,6 +43,8 @@ void FileManager::addFile(QString fileName) {
     File file(fileName, &hashToBlock, &blockToHash);
     sharedFiles.append(file);
     nameToId.insert(fileName, file.getFileID());
+    presentFileID.insert(file.getFileID(), 1);
+    qDebug() << "FileManager: added file " << fileName << "with hash" << file.getFileID().toHex();
 }
 
 QByteArray FileManager::getBlockByHash(QByteArray blockHash) {
@@ -44,12 +52,15 @@ QByteArray FileManager::getBlockByHash(QByteArray blockHash) {
 }
 
 void FileManager::retrieveFile(QByteArray fileID, QString peerName, Peer firstHop, quint32 hopLimit, QString fileName) {
-    if (idToBlocklist.contains(fileID)) {
+    if (presentFileID.contains(fileID)) {
         qDebug() << "Already have file!";
         return;
     }
+
+    qDebug() << "FileManager:retrieveFile() called";
     blocksReceived[fileID].resize(300); // TODO: add constant for this
-    if (fileName != NULL) {
+    if (fileName != "") {
+        qDebug() << "FileManager:retrieveFile() called for fileName" << fileName;
         idToName.insert(fileID, fileName);
     }
     qDebug() << "Sending request for hash " << fileID.toHex() << "to peer " << peerName;
@@ -75,7 +86,7 @@ void FileManager::gotNewBlockResponse(QString originName, QByteArray repliedBloc
         qDebug() << "fileBlockSize is " << fileBlockSize[fileID];
         sendRequest(originName, 0, fileID);
     } else {
-        qDebug() << "PULAPULAPULA!!!";
+        //qDebug() << "PULAPULAPULA!!!";
 
         if (!blockNumber.contains(repliedBlock)) {
             qDebug() << "Received a block for which I did not send a request!";
@@ -83,12 +94,12 @@ void FileManager::gotNewBlockResponse(QString originName, QByteArray repliedBloc
         }
 
         int position = blockNumber[repliedBlock];
-        qDebug() << "Position is:" << position;
-        qDebug() << "File ID is: " << fileID.toHex();
+        //qDebug() << "Position is:" << position;
+        //qDebug() << "File ID is: " << fileID.toHex();
 
         blocksReceived[fileID][position] = data;
         fileBlockSize[fileID]--;
-        qDebug() << "fileBlockSize for current file is: " << fileBlockSize[fileID];
+        //qDebug() << "fileBlockSize for current file is: " << fileBlockSize[fileID];
 
         if (fileBlockSize[fileID] == 0) {
             completeTransfer(fileID);

@@ -48,8 +48,8 @@ ChatDialog::ChatDialog(bool noForwardFlag)
             this, SLOT(parseSearchReply(QString,QString,QVariantList,QVariantList)));
 
     fileManager = new FileManager(sock, localhostName);
-    connect(this, SIGNAL(retrieveFileByID(QByteArray, QString, Peer, quint32)),
-            fileManager, SLOT(retrieveFile(QByteArray, QString, Peer, quint32)));
+    connect(this, SIGNAL(retrieveFileByID(QByteArray, QString, Peer, quint32, QString)),
+            fileManager, SLOT(retrieveFile(QByteArray, QString, Peer, quint32, QString)));
     connect(fileManager, SIGNAL(blockReadyForSending(QByteArray, QString, quint32)),
             this, SLOT(sendBlockRequest(QByteArray, QString, quint32)));
     connect(fileManager, SIGNAL(completedTransfer(QByteArray, QString)),
@@ -113,7 +113,7 @@ void ChatDialog::setUpUI() {
     fileDialog->setFileMode(QFileDialog::ExistingFiles);
 
     shareView = new QListWidget(this);
-    shareLabel = new QLabel("Shared files", this);    
+    shareLabel = new QLabel("Shared / Received files", this);
 
     pendingView = new QListWidget(this);
     pendingLabel = new QLabel("Pending transfers", this);
@@ -154,30 +154,43 @@ void ChatDialog::setUpUI() {
     textLayout->addWidget(textview, 50);
     textLayout->addWidget(textline, 10);
 
-    QVBoxLayout *shareLayout = new QVBoxLayout();
-    shareLayout->addWidget(shareLabel, 1, Qt::AlignCenter);
-    shareLayout->addWidget(shareView, 50);
-    shareLayout->addWidget(shareFileButton, 10);
-
     QVBoxLayout *transferSearchLayout = new QVBoxLayout();
     transferSearchLayout->addWidget(pendingLabel, 1, Qt::AlignCenter);
     transferSearchLayout->addWidget(pendingView, 20);
+
+    transferSearchLayout->addWidget(shareLabel, 1, Qt::AlignCenter);
+    transferSearchLayout->addWidget(shareView, 20);
+    transferSearchLayout->addWidget(shareFileButton, 1);
+
     transferSearchLayout->addWidget(searchBySHA, 1, Qt::AlignCenter);
     transferSearchLayout->addWidget(shaSearchLine, 1);
     transferSearchLayout->addWidget(nodeToAskLabel, 1, Qt::AlignCenter);
     transferSearchLayout->addWidget(nodeToAskLine, 1);
     transferSearchLayout->addWidget(shaSearchButton, 1);
 
+    transferSearchLayout->addWidget(keywordSearchLine, 1);
+    transferSearchLayout->addWidget(keywordSearchButton, 1, Qt::AlignCenter);
+
+
+    /*
     QVBoxLayout *keywordSearchLayout = new QVBoxLayout();
     keywordSearchLayout->addWidget(keywordSearchLine, 1, Qt::AlignCenter);
     keywordSearchLayout->addWidget(keywordSearchButton, 1, Qt::AlignCenter);
+    */
+
+    /*
+    QVBoxLayout *shareLayout = new QVBoxLayout();
+    shareLayout->addWidget(shareLabel, 1, Qt::AlignCenter);
+    shareLayout->addWidget(shareView, 50);
+    shareLayout->addWidget(shareFileButton, 10);
+    */
 
     QHBoxLayout *layout = new QHBoxLayout();
-    layout->addLayout(textLayout, 2);
     layout->addLayout(peerLayout, 2);
+    layout->addLayout(textLayout, 2);
     layout->addLayout(transferSearchLayout, 2);
-    layout->addLayout(shareLayout, 2);
-    layout->addLayout(keywordSearchLayout, 4);
+    //layout->addLayout(shareLayout, 2);
+    //layout->addLayout(keywordSearchLayout, 4);
 
     setLayout(layout);
 }
@@ -185,6 +198,7 @@ void ChatDialog::setUpUI() {
 void ChatDialog::downloadRequest(QString fileName, QByteArray shaHash, QString owner) {
     QMessageBox::warning(this, "Success", "Starting download for " + fileName);
     pendingView->addItem(shaHash.toHex());
+    qDebug() << "ChatDialog:downloadRequest started for " << fileName;
     emit(retrieveFileByID(shaHash, owner, routingMap[owner], HOP_LIMIT, fileName));
 }
 
@@ -194,12 +208,24 @@ void ChatDialog::parseSearchReply(QString originName, QString keywords, QVariant
     if (keywordSearchResults[keywords] > 10)
         return;
 
+    QVariantList uniqueNames, uniqueIDs;
+
+    for (int i = 0; i < matchNames.size(); i++) {
+        QString currID = matchIDs.at(i).toByteArray().toHex();
+        if (downloadsDialog->findItems(currID).size() == 0) {
+            uniqueNames.append(matchNames.at(i));
+            uniqueIDs.append(matchIDs.at(i));
+        }
+    }
+
+    matchNames = uniqueNames;
+    matchIDs = uniqueIDs;
+
     keywordSearchResults[keywords] += matchNames.size();
 
     if (keywordSearchResults[keywords] > 10)
         keywordSearchTimer[keywords]->disconnect();
 
-    //TODO: finish
     for (int i = 0; i < matchNames.size(); i++) {
         QString currName = matchNames.at(i).toString();
         QString currID = matchIDs.at(i).toByteArray().toHex();
@@ -209,10 +235,10 @@ void ChatDialog::parseSearchReply(QString originName, QString keywords, QVariant
 
 void ChatDialog::parseSearchRequest(QString originName, QString keywords, quint32 budget) {
     QList<QPair<QString, QByteArray> > searchResults = fileManager->searchByKeyword(keywords);
-    qDebug() << "In main: got" << searchResults.size() << "results";
+    //qDebug() << "In main: got" << searchResults.size() << "results";
     sendKeywordSearchRequest(keywords, budget);
-    qDebug() << "Sent requests to neighbours with budget " << budget;
-    qDebug() << "ChatDialog: origin is " << originName;
+    //qDebug() << "Sent requests to neighbours with budget " << budget;
+    //qDebug() << "ChatDialog: origin is " << originName;
 
     if (searchResults.size() != 0)
         sock->sendSearchReply(localhostName, originName, HOP_LIMIT, keywords, searchResults, routingMap[originName]);
