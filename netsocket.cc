@@ -160,7 +160,7 @@ QVariantMap NetSocket::serializeSearchReply(QString originName, QString dest, qu
     variantMap.insert(DEFAULT_SEARCH_REPLY_KEY, QVariant(keywords));
 
     for (int i = 0; i < searchResults.size(); i++) {
-        qDebug() << "SerializeSearchReply" << i << searchResults.at(i).first << searchResults.at(i).second.toHex();
+        //qDebug() << "SerializeSearchReply" << i << searchResults.at(i).first << searchResults.at(i).second.toHex();
         nameList.append(QVariant(searchResults.at(i).first));
         idList.append(QVariant(searchResults.at(i).second));
     }
@@ -214,7 +214,7 @@ void NetSocket::sendBlockReply(QString originName, QString dest, QByteArray repl
 
 void NetSocket::sendSearchRequest(QString originName, QString keyword, quint32 budget, Peer firstHop) {
     QByteArray serializedMessage = serializeVariantMap(serializeSearchRequest(originName, keyword, budget));
-    //qDebug() << "Sock: Sending search request to " << firstHop.port << " with budget " << budget;
+    //qDebug() << "Sock: Sending search request to " << firstHop.port << "for keyword" << keyword << " with budget " << budget;
     writeDatagramSinglePeer(&serializedMessage, firstHop);
 }
 

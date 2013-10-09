@@ -17,7 +17,7 @@
 const int ChatDialog::ANTI_ENTROPY_FREQ = 2000;
 const int ChatDialog::ROUTE_MESSAGE_FREQ = 10000;
 const quint32 ChatDialog::HOP_LIMIT = 10;
-const quint32 ChatDialog::BUDGET_LIMIT = 100;
+const quint32 ChatDialog::BUDGET_LIMIT = 260;
 const int ChatDialog::KEYWORD_SEARCH_FREQ = 1000;
 const int ChatDialog::KEYWORD_SEARCH_MAX_RESULTS = 10;
 
@@ -250,12 +250,24 @@ void ChatDialog::sendKeywordSearchRequest(QString keyword, quint32 budget) {
     if (budget == 0)
         return;
 
+    for (int i = 0; i < routingMap.keys().size(); i++) {
+        int peerBudget = budget / routingMap.keys().size() + (i < budget % routingMap.keys().size());
+        QString currentPeerName = routingMap.keys().at(i);
+
+        if (peerBudget > 0) {
+            //qDebug() << "Sending request to" << currentPeerName << " --- Big budget is:" << budget << "local is " << peerBudget;
+            sock->sendSearchRequest(localhostName, keyword, peerBudget, routingMap[currentPeerName]);
+        }
+    }
+    /*
     for (int i = 0; i < peerNameList->count(); i++) {
         int peerBudget = budget / peerNameList->count() + (i < budget % peerNameList->count());
+        qDebug() << "Big budget is:" << budget << "local is " << peerBudget;
         QString currentPeerName = peerNameList->item(i)->text();
         if (peerBudget > 0)
             sock->sendSearchRequest(localhostName, keyword, peerBudget, routingMap[currentPeerName]);
     }
+    */
 }
 
 void ChatDialog::newKeywordSearchRequest() {
