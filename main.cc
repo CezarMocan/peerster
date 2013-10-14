@@ -198,7 +198,7 @@ void ChatDialog::setUpUI() {
 void ChatDialog::downloadRequest(QString fileName, QByteArray shaHash, QString owner) {
     QMessageBox::warning(this, "Success", "Starting download for " + fileName);
     pendingView->addItem(shaHash.toHex());
-    qDebug() << "ChatDialog:downloadRequest started for " << fileName;
+    qDebug() << "ChatDialog:downloadRequest started for " << fileName << " with hash " << shaHash.toHex();
     emit(retrieveFileByID(shaHash, owner, routingMap[owner], HOP_LIMIT, fileName));
 }
 
@@ -326,7 +326,7 @@ void ChatDialog::transferComplete(QByteArray fileID, QString fileName) {
     qDebug() << "Transfer complete for " << fileIDString;
 
     QList<QListWidgetItem*> list = pendingView->findItems(fileIDString, Qt::MatchExactly);
-    if (list.size() != 1) {
+    if (list.size() == 0) {
         qDebug() << "UI transfers pending list could not find string " << fileIDString;
         return;
     }
