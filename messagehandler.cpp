@@ -168,6 +168,9 @@ void MessageHandler::parseSearchReply(QVariantMap textVariantMap, Peer currentPe
     QVariantList matchNames = textVariantMap[sock->DEFAULT_SEARCH_REPLY_NAMES_KEY].toList();
     QVariantList matchIDs = textVariantMap[sock->DEFAULT_SEARCH_REPLY_IDS_KEY].toList();
 
+    qDebug() << "Got search reply from " << originName << " for " << keywords << "of size " << matchNames.size();
+    qDebug() << "Search reply is for: " << dest << "first hop is " << routingMap[dest].port;
+
     if (dest == localhostName) {
         emit(gotNewSearchReply(originName, keywords, matchNames, matchIDs));
     } else {

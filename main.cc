@@ -236,7 +236,7 @@ void ChatDialog::parseSearchReply(QString originName, QString keywords, QVariant
 void ChatDialog::parseSearchRequest(QString originName, QString keywords, quint32 budget) {
     QList<QPair<QString, QByteArray> > searchResults = fileManager->searchByKeyword(keywords);
     //qDebug() << "In main: got" << searchResults.size() << "results";
-    sendKeywordSearchRequest(keywords, budget);
+    sendKeywordSearchRequest(keywords, budget, originName);
     //qDebug() << "Sent requests to neighbours with budget " << budget;
     //qDebug() << "ChatDialog: origin is " << originName;
 
@@ -244,7 +244,7 @@ void ChatDialog::parseSearchRequest(QString originName, QString keywords, quint3
         sock->sendSearchReply(localhostName, originName, HOP_LIMIT, keywords, searchResults, routingMap[originName]);
 }
 
-void ChatDialog::sendKeywordSearchRequest(QString keyword, quint32 budget) {
+void ChatDialog::sendKeywordSearchRequest(QString keyword, quint32 budget, QString origin) {
     budget--;
 
     if (budget == 0)
@@ -256,7 +256,7 @@ void ChatDialog::sendKeywordSearchRequest(QString keyword, quint32 budget) {
 
         if (peerBudget > 0) {
             //qDebug() << "Sending request to" << currentPeerName << " --- Big budget is:" << budget << "local is " << peerBudget;
-            sock->sendSearchRequest(localhostName, keyword, peerBudget, routingMap[currentPeerName]);
+            sock->sendSearchRequest(origin, keyword, peerBudget, routingMap[currentPeerName]);
         }
     }
     /*
@@ -281,7 +281,7 @@ void ChatDialog::newKeywordSearchRequest() {
         return;
     }
 
-    sendKeywordSearchRequest(keyword, keywordSearchBudget[keyword]);
+    sendKeywordSearchRequest(keyword, keywordSearchBudget[keyword], localhostName);
 
     keywordSearchBudget[keyword] = 2 * keywordSearchBudget[keyword];
 }

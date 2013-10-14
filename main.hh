@@ -186,7 +186,7 @@ private:
     void spreadRumor(Peer previous, QString from, QString message, int position);
 
     // Send the keyword search request
-    void sendKeywordSearchRequest(QString keyword, quint32 budget);
+    void sendKeywordSearchRequest(QString keyword, quint32 budget, QString origin);
 
     // Print different kinds of maps - debug purposes
     void printMap(QVariantMap map, QString hostName);
