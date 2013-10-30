@@ -2,7 +2,13 @@
 
 <h4 align=center> developed in C++ using the Qt framework </h4>  
 
-Peerster is a network chat client, somehow similar to the well known IRC, which (for now) implements a gossip protocol for sending messages to all the peers in the network and also allows the possibility of sending private messages. 
+Peerster is a network chat client, which (for now) implements a similar (simplified) version of the well known Gnutella protocol. 
+It is able to run in a completely decentralized environment, having the following functionalities: 
+	- adding peers (by IP/host name + port)
+	- NAT penetration, via a rendez-vous peer
+	- group chat
+	- private chat
+	- file transfer (still sloppy)
 
 In order to use it, you need to have qmake and make installed on your machine. 
 
