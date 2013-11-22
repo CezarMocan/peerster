@@ -20,12 +20,14 @@ SOURCES += main.cpp\
     chordnode.cpp \
     networkmanager.cpp \
     node.cpp \
-    util.cpp
+    util.cpp \
+    manager.cpp
 
 HEADERS  += mainwindow.h \
     chordnode.h \
     networkmanager.h \
     node.h \
-    util.h
+    util.h \
+    manager.h
 
 FORMS    += mainwindow.ui

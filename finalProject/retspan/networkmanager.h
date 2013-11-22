@@ -17,9 +17,11 @@ public:
     Node* getLocalhost();
 
 signals:
-
+    void receivedChordQuery(Node to, QString key);
+    void receivedChordReply(QString key, Node value);
 
 public slots:
+    void receiveData();
 
 private:
     quint16 myPortMin;

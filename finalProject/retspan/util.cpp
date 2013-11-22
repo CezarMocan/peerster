@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QHostAddress>
 
 #include "util.h"
 
@@ -6,6 +7,16 @@ Util::Util() {
 }
 
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
+int Util::KEYSPACE_SIZE = 160;
+
+QString Util::TYPE = QString("TYPE");
+QString Util::NODE_ADDRESS = QString("NODE_ADDRESS");
+QString Util::NODE_PORT = QString("NODE_PORT");
+QString Util::NODE_ID = QString("NODE_ID");
+QString Util::KEY = QString("KEY");
+
+QString Util::CHORD_QUERY = QString("CHORD_QUERY");
+QString Util::CHORD_REPLY = QString("CHORD_REPLY");
 
 QString Util::createNodeID(QString name) {
     QByteArray block;
@@ -57,7 +68,6 @@ QString Util::addition(QString key1, QString key2) {
     }
 
     return sum;
-
 }
 
 QString Util::xorMaxValue(QString key) {
@@ -82,3 +92,41 @@ int Util::getNumber(char character) {
     else
         return (character - 'a' + 10);
 }
+
+QByteArray Util::serializeVariantMap(QVariantMap map) {
+    QByteArray serializedMessage;
+    QDataStream serializer(&serializedMessage, QIODevice::WriteOnly);
+    serializer << map;
+    return serializedMessage;
+}
+
+QVariantMap Util::createChordQuery(Node from, QString key) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(CHORD_QUERY));
+    result.insert(NODE_ADDRESS, QVariant(from.getAddressString()));
+    result.insert(NODE_PORT, QVariant(from.getPort()));
+    result.insert(NODE_ID, QVariant(from.getID()));
+    result.insert(KEY, QVariant(key));
+
+    return result;
+}
+
+QVariantMap Util::createChordReply(QString key, Node value) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(CHORD_REPLY));
+    result.insert(KEY, QVariant(key));
+    result.insert(NODE_ADDRESS, QVariant(value.getAddressString()));
+    result.insert(NODE_PORT, QVariant(value.getPort()));
+    result.insert(NODE_ID, QVariant(value.getID()));
+
+    return result;
+}
+
+void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node, QString &key) {
+    node.setAddressString(variantMap[NODE_ADDRESS].toString());
+    node.setPort(variantMap[NODE_PORT].toUInt());
+    node.setID(variantMap[NODE_ID].toString());
+    key = variantMap[KEY].toString();
+    type = variantMap[TYPE].toString();
+}
+
