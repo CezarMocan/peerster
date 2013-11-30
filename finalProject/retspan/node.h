@@ -35,8 +35,7 @@ public slots:
 private:
     QHostAddress address;
     quint16 port;
-    QString ID;
-
+    QString ID;    
 };
 
 #endif // NODE_H

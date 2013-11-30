@@ -17,8 +17,12 @@ public:
     Node* getLocalhost();
 
 signals:
-    void receivedChordQuery(Node to, QString key);
+    void receivedChordQuery(Node from, QString key);
     void receivedChordReply(QString key, Node value);
+    void receivedGetPredecessorRequest(Node from, int position);
+    void receivedGetPredecessorReply(Node neighbour, Node predecessor, int position);
+    void receivedUpdatePredecessor(Node newPredecessor);
+    void receivedUpdateFinger(Node newFinger, int position);
 
 public slots:
     void receiveData();

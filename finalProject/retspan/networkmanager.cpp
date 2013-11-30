@@ -46,21 +46,36 @@ void NetworkManager::receiveData() {
         quint16 senderPort;
         this->readDatagram(datagram->data(), datagram->size(), &senderAddress, &senderPort);
 
+        Node sender(senderAddress, senderPort);
+
         QVariantMap variantMap;
 
         QDataStream *deserializer = new QDataStream(datagram, QIODevice::ReadOnly);
         (*deserializer) >> variantMap;
 
         Node node; QString key; QString type;
-        Util::parseChordVariantMap(variantMap, type, node, key);
+        Util::parseChordVariantMap(variantMap, type, node);
 
-//        void receivedChordQuery(Node to, QString key);
-//        void receivedChordReply(QString key, Node value);
-
-        if (type == Util::CHORD_QUERY)
+        if (type == Util::CHORD_QUERY) {
+            key = variantMap[Util::KEY].toString();
             emit receivedChordQuery(node, key);
-        else if (type == Util::CHORD_REPLY)
+        }
+        else if (type == Util::CHORD_REPLY) {
+            key = variantMap[Util::KEY].toString();
             emit receivedChordReply(key, node);
+        }
+        else if (type == Util::GET_PREDECESSOR) {
+            int position = variantMap[Util::POSITION].toInt();
+            emit receivedGetPredecessorRequest(node, position);
+        } else if (type == Util::GET_PREDECESSOR_REPLY) {
+            int position = variantMap[Util::POSITION].toInt();
+            emit receivedGetPredecessorReply(sender, node, position);
+        } else if (type == Util::UPDATE_PREDECESSOR) {
+            emit receivedUpdatePredecessor(node);
+        } else if (type == Util::UPDATE_FINGER) {
+            int position = variantMap[Util::POSITION].toInt();
+            emit receivedUpdateFinger(node, position);
+        }
         else {
             qDebug() << "Received message of unsupported type " + type;
         }

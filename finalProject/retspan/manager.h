@@ -20,8 +20,10 @@ public:
     MainWindow *mainWindow;
 
 signals:
+    void connectButtonPushed(Node neighbour);
 
 public slots:
+    void connectButtonClicked();
 
 };
 

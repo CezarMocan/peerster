@@ -7,6 +7,9 @@ Util::Util() {
 }
 
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
+QString Util::ONE = "0000000000000000000000000000000000000001";
+QString Util::ZERO = "0000000000000000000000000000000000000000";
+
 int Util::KEYSPACE_SIZE = 160;
 
 QString Util::TYPE = QString("TYPE");
@@ -14,9 +17,14 @@ QString Util::NODE_ADDRESS = QString("NODE_ADDRESS");
 QString Util::NODE_PORT = QString("NODE_PORT");
 QString Util::NODE_ID = QString("NODE_ID");
 QString Util::KEY = QString("KEY");
+QString Util::POSITION = QString("POSITION");
 
 QString Util::CHORD_QUERY = QString("CHORD_QUERY");
 QString Util::CHORD_REPLY = QString("CHORD_REPLY");
+QString Util::GET_PREDECESSOR = QString("GET_PREDECESSOR");
+QString Util::GET_PREDECESSOR_REPLY = QString("GET_PREDECESSOR_REPLY");
+QString Util::UPDATE_PREDECESSOR = QString("UPDATE_PREDECESSOR");
+QString Util::UPDATE_FINGER = QString("UPDATE_FINGER");
 
 QString Util::createNodeID(QString name) {
     QByteArray block;
@@ -93,6 +101,23 @@ int Util::getNumber(char character) {
         return (character - 'a' + 10);
 }
 
+bool Util::intervalContainsKey(QString start, QString stop, QString key) {
+    if (start == stop)
+        return true;
+    if (start < stop) {
+        if (key >= start && key <= stop)
+            return true;
+        else
+            return false;
+    } else {
+        if (key >= start && key <= Util::MAX_VALUE)
+            return true;
+        if (key >= Util::ZERO && key <= stop)
+            return true;
+        return false;
+    }
+}
+
 QByteArray Util::serializeVariantMap(QVariantMap map) {
     QByteArray serializedMessage;
     QDataStream serializer(&serializedMessage, QIODevice::WriteOnly);
@@ -122,11 +147,58 @@ QVariantMap Util::createChordReply(QString key, Node value) {
     return result;
 }
 
-void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node, QString &key) {
+QVariantMap Util::createGetPredecessor(Node from, int position) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(GET_PREDECESSOR));
+    result.insert(NODE_ADDRESS, QVariant(from.getAddressString()));
+    result.insert(NODE_PORT, QVariant(from.getPort()));
+    result.insert(NODE_ID, QVariant(from.getID()));
+    result.insert(POSITION, QVariant(position));
+
+    return result;
+}
+
+QVariantMap Util::createGetPredecessorReply(Node predecessor, int position) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(GET_PREDECESSOR_REPLY));
+    result.insert(NODE_ADDRESS, QVariant(predecessor.getAddressString()));
+    result.insert(NODE_PORT, QVariant(predecessor.getPort()));
+    result.insert(NODE_ID, QVariant(predecessor.getID()));
+    result.insert(POSITION, QVariant(position));
+
+    return result;
+}
+
+QVariantMap Util::createUpdatePredecessor(Node newPredecessor) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(UPDATE_PREDECESSOR));
+    result.insert(NODE_ADDRESS, QVariant(newPredecessor.getAddressString()));
+    result.insert(NODE_PORT, QVariant(newPredecessor.getPort()));
+    result.insert(NODE_ID, QVariant(newPredecessor.getID()));
+
+    return result;
+}
+
+QVariantMap Util::createUpdateFinger(Node newFinger, int position) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(UPDATE_FINGER));
+    result.insert(NODE_ADDRESS, QVariant(newFinger.getAddressString()));
+    result.insert(NODE_PORT, QVariant(newFinger.getPort()));
+    result.insert(NODE_ID, QVariant(newFinger.getID()));
+    result.insert(POSITION, QVariant(position));
+
+    return result;
+
+}
+
+void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node) {
     node.setAddressString(variantMap[NODE_ADDRESS].toString());
     node.setPort(variantMap[NODE_PORT].toUInt());
-    node.setID(variantMap[NODE_ID].toString());
-    key = variantMap[KEY].toString();
+    node.setID(variantMap[NODE_ID].toString());    
     type = variantMap[TYPE].toString();
+}
+
+void Util::parseVariantMapKey(QVariantMap variantMap, QString &key) {
+    key = variantMap[KEY].toString();
 }
 

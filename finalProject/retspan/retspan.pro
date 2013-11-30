@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     networkmanager.cpp \
     node.cpp \
     util.cpp \
-    manager.cpp
+    manager.cpp \
+    fingerentry.cpp
 
 HEADERS  += mainwindow.h \
     chordnode.h \

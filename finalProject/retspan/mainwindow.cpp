@@ -6,6 +6,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    connectButton = findChild<QPushButton*>("connectButton");
+    lineEditAddress = findChild<QLineEdit*>("lineEditAddress");
+    lineEditPort = findChild<QLineEdit*>("lineEditPort");
 }
 
 MainWindow::~MainWindow()
