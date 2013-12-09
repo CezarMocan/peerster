@@ -24,6 +24,8 @@ signals:
     void receivedReplyFromChord(QString key, Node value);
     void stateUpdateUpdatingOthers();
     void stateUpdateReady();
+    void updatedFingerTable(QVector<FingerEntry> fingerTable);
+    void updatedPredecessor(Node predecessor);
 
 public slots:
     // UI slots

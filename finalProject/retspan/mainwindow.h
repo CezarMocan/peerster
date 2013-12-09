@@ -5,6 +5,10 @@
 #include <QPushButton>
 #include <QLineEdit>
 #include <QLabel>
+#include <QTableWidget>
+
+#include "node.h"
+#include "fingerentry.h"
 
 namespace Ui {
 class MainWindow;
@@ -22,6 +26,9 @@ public:
     QLineEdit *lineEditAddress;
     QLineEdit *lineEditPort;
     QLabel *labelStatus;
+    QLabel *labelPredecessor;
+    QTableWidget *tableWidgetFingerTable;
+    QLabel *labelNodeID;
 
 private:
     Ui::MainWindow *ui;    
@@ -30,6 +37,8 @@ private:
 public slots:
     void stateUpdateUpdatingOthers();
     void stateUpdateReady();
+    void updatedFingerTable(QVector<FingerEntry> fingerTable);
+    void updatedPredecessor(Node predecessor);
 
 };
 

@@ -25,6 +25,7 @@ signals:
 public slots:
     void connectButtonClicked();
 
+
 };
 
 #endif // MANAGER_H

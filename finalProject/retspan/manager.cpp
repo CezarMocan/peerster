@@ -11,12 +11,15 @@ Manager::Manager(QObject *parent) : QObject(parent) {
     localNode = new ChordNode(chordManager, localhost);
 
     mainWindow = new MainWindow();
+    mainWindow->labelNodeID->setText(localhost->getID());
     mainWindow->show();
 
     connect(mainWindow->connectButton, SIGNAL(clicked()), this, SLOT(connectButtonClicked()));
     connect(this, SIGNAL(connectButtonPushed(Node)), localNode, SLOT(connectButtonPushed(Node)));
     connect(localNode, SIGNAL(stateUpdateReady()), mainWindow, SLOT(stateUpdateReady()));
     connect(localNode, SIGNAL(stateUpdateUpdatingOthers()), mainWindow, SLOT(stateUpdateUpdatingOthers()));
+    connect(localNode, SIGNAL(updatedFingerTable(QVector<FingerEntry>)), mainWindow, SLOT(updatedFingerTable(QVector<FingerEntry>)));
+    connect(localNode, SIGNAL(updatedPredecessor(Node)), mainWindow, SLOT(updatedPredecessor(Node)));
 }
 
 void Manager::connectButtonClicked() {

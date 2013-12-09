@@ -17,6 +17,7 @@ ChordNode::ChordNode(NetworkManager *chordManager, Node *localhost, QObject *par
     this->localhost = localhost;    
     this->state = INITIALIZING;
     this->predecessor = *localhost;
+    emit(updatedPredecessor(*localhost));
 
     createFingerTable();
     createNeighbourTable();
@@ -228,6 +229,7 @@ void ChordNode::receivedChordReply(QString key, Node value) {
         // Start sending updates to the other nodes only after predecessor has been updated
         if (!(this->predecessor == *localhost)) {
             this->state = UPDATING_OTHERS;
+            emit(updatedFingerTable(*fingerTable));
             emit(stateUpdateUpdatingOthers());
             qDebug() << "State UPDATING_OTHERS for node " << this->localhost->toString();
             updateOthers(0);
@@ -253,11 +255,13 @@ void ChordNode::receivedGetPredecessorReply(Node neighbour, Node predecessor, in
         if (position == 0) {
             qDebug() << "Updating predecessors! ";
             this->predecessor = Node(predecessor);
+            emit(updatedPredecessor(this->predecessor));
             QByteArray datagram = Util::serializeVariantMap(Util::createUpdatePredecessor(*localhost));
             chordManager->sendData(neighbour, datagram);
 
             if (this->state == INITIALIZING && sentQueries.isEmpty()) {
                 this->state = UPDATING_OTHERS;
+                emit(updatedFingerTable(*fingerTable));
                 emit(stateUpdateUpdatingOthers());
                 qDebug() << "State UPDATING_OTHERS for node " << this->localhost->toString();
                 updateOthers(0);
@@ -275,6 +279,8 @@ void ChordNode::receivedGetPredecessorReply(Node neighbour, Node predecessor, in
 
 void ChordNode::receivedUpdatePredecessor(Node newPredecessor) {
     this->predecessor = newPredecessor;
+    emit(updatedPredecessor(this->predecessor));
+
     qDebug() << "Updated predecessor to " << newPredecessor.toString();
     printFingerTable();
 }
@@ -289,6 +295,8 @@ void ChordNode::receivedUpdateFinger(Node newFinger, int position) {
         if (!(newFinger == (this->predecessor)))
             chordManager->sendData(this->predecessor, datagram);
     }
+
+    emit(updatedFingerTable(*fingerTable));
 
     printFingerTable();
 }
