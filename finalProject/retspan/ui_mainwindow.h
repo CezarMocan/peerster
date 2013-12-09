@@ -47,6 +47,7 @@ public:
     QLabel *labelNodeID;
     QMenuBar *menuBar;
     QMenu *menuChord_lookup;
+    QMenu *menuSearch;
     QToolBar *mainToolBar;
     QStatusBar *statusBar;
 
@@ -54,7 +55,7 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(796, 502);
+        MainWindow->resize(796, 472);
         centralWidget = new QWidget(MainWindow);
         centralWidget->setObjectName(QString::fromUtf8("centralWidget"));
         lineEditAddress = new QLineEdit(centralWidget);
@@ -77,10 +78,10 @@ public:
         label_5->setGeometry(QRect(570, 350, 62, 16));
         label = new QLabel(centralWidget);
         label->setObjectName(QString::fromUtf8("label"));
-        label->setGeometry(QRect(500, 30, 62, 16));
+        label->setGeometry(QRect(610, 30, 62, 16));
         labelStatus = new QLabel(centralWidget);
         labelStatus->setObjectName(QString::fromUtf8("labelStatus"));
-        labelStatus->setGeometry(QRect(550, 30, 81, 16));
+        labelStatus->setGeometry(QRect(670, 30, 81, 16));
         label_2 = new QLabel(centralWidget);
         label_2->setObjectName(QString::fromUtf8("label_2"));
         label_2->setGeometry(QRect(390, 30, 101, 20));
@@ -103,16 +104,18 @@ public:
         labelPredecessor->setGeometry(QRect(490, 270, 211, 16));
         label_7 = new QLabel(centralWidget);
         label_7->setObjectName(QString::fromUtf8("label_7"));
-        label_7->setGeometry(QRect(500, 10, 62, 16));
+        label_7->setGeometry(QRect(610, 10, 62, 16));
         labelNodeID = new QLabel(centralWidget);
         labelNodeID->setObjectName(QString::fromUtf8("labelNodeID"));
-        labelNodeID->setGeometry(QRect(570, 10, 91, 16));
+        labelNodeID->setGeometry(QRect(670, 10, 91, 16));
         MainWindow->setCentralWidget(centralWidget);
         menuBar = new QMenuBar(MainWindow);
         menuBar->setObjectName(QString::fromUtf8("menuBar"));
         menuBar->setGeometry(QRect(0, 0, 796, 22));
         menuChord_lookup = new QMenu(menuBar);
         menuChord_lookup->setObjectName(QString::fromUtf8("menuChord_lookup"));
+        menuSearch = new QMenu(menuBar);
+        menuSearch->setObjectName(QString::fromUtf8("menuSearch"));
         MainWindow->setMenuBar(menuBar);
         mainToolBar = new QToolBar(MainWindow);
         mainToolBar->setObjectName(QString::fromUtf8("mainToolBar"));
@@ -122,6 +125,7 @@ public:
         MainWindow->setStatusBar(statusBar);
 
         menuBar->addAction(menuChord_lookup->menuAction());
+        menuBar->addAction(menuSearch->menuAction());
 
         retranslateUi(MainWindow);
 
@@ -149,6 +153,7 @@ public:
         label_7->setText(QApplication::translate("MainWindow", "Node ID:", 0, QApplication::UnicodeUTF8));
         labelNodeID->setText(QApplication::translate("MainWindow", "Not initialized", 0, QApplication::UnicodeUTF8));
         menuChord_lookup->setTitle(QApplication::translate("MainWindow", "Chord lookup", 0, QApplication::UnicodeUTF8));
+        menuSearch->setTitle(QApplication::translate("MainWindow", "Search", 0, QApplication::UnicodeUTF8));
     } // retranslateUi
 
 };

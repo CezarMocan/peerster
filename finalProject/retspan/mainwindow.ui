@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>796</width>
-    <height>502</height>
+    <height>472</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -89,7 +89,7 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>500</x>
+      <x>610</x>
       <y>30</y>
       <width>62</width>
       <height>16</height>
@@ -102,7 +102,7 @@
    <widget class="QLabel" name="labelStatus">
     <property name="geometry">
      <rect>
-      <x>550</x>
+      <x>670</x>
       <y>30</y>
       <width>81</width>
       <height>16</height>
@@ -179,7 +179,7 @@
    <widget class="QLabel" name="label_7">
     <property name="geometry">
      <rect>
-      <x>500</x>
+      <x>610</x>
       <y>10</y>
       <width>62</width>
       <height>16</height>
@@ -192,7 +192,7 @@
    <widget class="QLabel" name="labelNodeID">
     <property name="geometry">
      <rect>
-      <x>570</x>
+      <x>670</x>
       <y>10</y>
       <width>91</width>
       <height>16</height>
@@ -217,7 +217,13 @@
      <string>Chord lookup</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menuSearch">
+    <property name="title">
+     <string>Search</string>
+    </property>
+   </widget>
    <addaction name="menuChord_lookup"/>
+   <addaction name="menuSearch"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
