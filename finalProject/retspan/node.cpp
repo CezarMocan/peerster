@@ -19,7 +19,7 @@ Node::Node(QHostAddress address, quint16 port) {
     this->address = address;
     this->port = port;
     this->ID = Util::createNodeID(this->toString());
-    qDebug() << "Node ID = " << this->ID;
+    //qDebug() << "Node ID = " << this->ID;
 }
 
 Node::Node(QHostAddress address, quint16 port, QString ID) {

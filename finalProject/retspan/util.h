@@ -27,6 +27,8 @@ public:
 
     static QString CHORD_QUERY;
     static QString CHORD_REPLY;
+    static QString CHORD_QUERY_PRED;
+    static QString CHORD_REPLY_PRED;
     static QString GET_PREDECESSOR;
     static QString GET_PREDECESSOR_REPLY;
     static QString UPDATE_PREDECESSOR;
@@ -45,6 +47,8 @@ public:
 
     static QVariantMap createChordQuery(Node from, QString key);
     static QVariantMap createChordReply(QString key, Node value);
+    static QVariantMap createChordQueryPred(Node from, QString key);
+    static QVariantMap createChordReplyPred(QString key, Node value);
     static QVariantMap createGetPredecessor(Node from, int position);
     static QVariantMap createGetPredecessorReply(Node predecessor, int position);
     static QVariantMap createUpdatePredecessor(Node newPredecessor);

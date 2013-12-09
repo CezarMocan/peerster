@@ -6,12 +6,6 @@
 Util::Util() {
 }
 
-QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
-QString Util::ONE = "0000000000000000000000000000000000000001";
-QString Util::ZERO = "0000000000000000000000000000000000000000";
-
-int Util::KEYSPACE_SIZE = 160;
-
 QString Util::TYPE = QString("TYPE");
 QString Util::NODE_ADDRESS = QString("NODE_ADDRESS");
 QString Util::NODE_PORT = QString("NODE_PORT");
@@ -21,19 +15,36 @@ QString Util::POSITION = QString("POSITION");
 
 QString Util::CHORD_QUERY = QString("CHORD_QUERY");
 QString Util::CHORD_REPLY = QString("CHORD_REPLY");
+QString Util::CHORD_QUERY_PRED = QString("CHORD_QUERY_PRED");
+QString Util::CHORD_REPLY_PRED = QString("CHORD_REPLY_PRED");
 QString Util::GET_PREDECESSOR = QString("GET_PREDECESSOR");
 QString Util::GET_PREDECESSOR_REPLY = QString("GET_PREDECESSOR_REPLY");
 QString Util::UPDATE_PREDECESSOR = QString("UPDATE_PREDECESSOR");
 QString Util::UPDATE_FINGER = QString("UPDATE_FINGER");
 
+/*
+QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
+QString Util::ONE = "0000000000000000000000000000000000000001";
+QString Util::ZERO = "0000000000000000000000000000000000000000";
+int Util::KEYSPACE_SIZE = 160;
+*/
+
+QString Util::MAX_VALUE = "ff";
+QString Util::ONE = "01";
+QString Util::ZERO = "00";
+int Util::KEYSPACE_SIZE = 8;
+
 QString Util::createNodeID(QString name) {
+
     QByteArray block;
     block.append(name);
-    return (QCA::Hash("sha1").hashToString(block));
+    QString result = (QCA::Hash("sha1").hashToString(block));
+
+    return result.left(2);
 }
 
 QString Util::getCircleDifference(QString key1, QString key2) {
-    if (key1.size() != 40 || key2.size() != 40) {
+    if (key1.size() * 4 != KEYSPACE_SIZE || key2.size() * 4 != KEYSPACE_SIZE) {
         qDebug() << "Key1 size is " << key1.size() << " Key2 size is " << key2.size();
     }
 
@@ -60,8 +71,13 @@ QString Util::difference(QString key1, QString key2) {
     for (i = key2.size() - 1; i >= 0 && key2[i].toAscii() == '0'; i--);
     if (i == -1)
         key2 = MAX_VALUE;
-    else
+    else {
         key2[i] = (getChar(getNumber(key2[i].toAscii()) - 1));
+        for (int j = i + 1; j < key2.size(); j++)
+            key2[j] = 'f';
+    }
+
+    //qDebug() << "i = " << i << " Difference: key2 after subtracting 1 = " << key2;
 
     return addition(key1, xorMaxValue(key2));
 }
@@ -102,8 +118,12 @@ int Util::getNumber(char character) {
 }
 
 bool Util::intervalContainsKey(QString start, QString stop, QString key) {
-    if (start == stop)
-        return true;
+    if (start == stop) {
+        if (key == start)
+            return true;
+        else
+            return true;
+    }
     if (start < stop) {
         if (key >= start && key <= stop)
             return true;
@@ -146,6 +166,29 @@ QVariantMap Util::createChordReply(QString key, Node value) {
 
     return result;
 }
+
+QVariantMap Util::createChordQueryPred(Node from, QString key) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(CHORD_QUERY_PRED));
+    result.insert(NODE_ADDRESS, QVariant(from.getAddressString()));
+    result.insert(NODE_PORT, QVariant(from.getPort()));
+    result.insert(NODE_ID, QVariant(from.getID()));
+    result.insert(KEY, QVariant(key));
+
+    return result;
+}
+
+QVariantMap Util::createChordReplyPred(QString key, Node value) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(CHORD_REPLY_PRED));
+    result.insert(KEY, QVariant(key));
+    result.insert(NODE_ADDRESS, QVariant(value.getAddressString()));
+    result.insert(NODE_PORT, QVariant(value.getPort()));
+    result.insert(NODE_ID, QVariant(value.getID()));
+
+    return result;
+}
+
 
 QVariantMap Util::createGetPredecessor(Node from, int position) {
     QVariantMap result;

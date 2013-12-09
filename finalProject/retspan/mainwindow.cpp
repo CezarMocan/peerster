@@ -9,9 +9,18 @@ MainWindow::MainWindow(QWidget *parent) :
     connectButton = findChild<QPushButton*>("connectButton");
     lineEditAddress = findChild<QLineEdit*>("lineEditAddress");
     lineEditPort = findChild<QLineEdit*>("lineEditPort");
+    labelStatus = findChild<QLabel*>("labelStatus");
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::stateUpdateUpdatingOthers() {
+    labelStatus->setText("Updating other nodes...");
+}
+
+void MainWindow::stateUpdateReady() {
+    labelStatus->setText("Ready!");
 }

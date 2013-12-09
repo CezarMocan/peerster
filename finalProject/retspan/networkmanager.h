@@ -23,6 +23,9 @@ signals:
     void receivedGetPredecessorReply(Node neighbour, Node predecessor, int position);
     void receivedUpdatePredecessor(Node newPredecessor);
     void receivedUpdateFinger(Node newFinger, int position);
+    void receivedChordQueryPred(Node from, QString key);
+    void receivedChordReplyPred(QString key, Node value);
+
 
 public slots:
     void receiveData();

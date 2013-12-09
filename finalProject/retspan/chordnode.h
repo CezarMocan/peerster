@@ -22,6 +22,8 @@ public:
 
 signals:
     void receivedReplyFromChord(QString key, Node value);
+    void stateUpdateUpdatingOthers();
+    void stateUpdateReady();
 
 public slots:
     // UI slots
@@ -33,12 +35,16 @@ public slots:
     void receivedGetPredecessorReply(Node neighbour, Node predecessor, int position);
     void receivedUpdatePredecessor(Node newPredecessor);
     void receivedUpdateFinger(Node newFinger, int position);
+    void receivedChordQueryPred(Node from, QString key);
+    void receivedChordReplyPred(QString key, Node value);
+
 
 private:
     void createFingerTable();
     void initFingerTable(Node neighbour, int position);
     void createNeighbourTable();
-    void updateOthers();
+    void updateOthers(int position);
+    void printFingerTable();
 
     NetworkManager *chordManager;
     Node *localhost;

@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QLabel>
 
 namespace Ui {
 class MainWindow;
@@ -20,12 +21,16 @@ public:
     QPushButton *connectButton;
     QLineEdit *lineEditAddress;
     QLineEdit *lineEditPort;
+    QLabel *labelStatus;
 
 private:
     Ui::MainWindow *ui;    
 
 
 public slots:
+    void stateUpdateUpdatingOthers();
+    void stateUpdateReady();
+
 };
 
 #endif // MAINWINDOW_H

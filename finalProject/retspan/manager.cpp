@@ -15,6 +15,8 @@ Manager::Manager(QObject *parent) : QObject(parent) {
 
     connect(mainWindow->connectButton, SIGNAL(clicked()), this, SLOT(connectButtonClicked()));
     connect(this, SIGNAL(connectButtonPushed(Node)), localNode, SLOT(connectButtonPushed(Node)));
+    connect(localNode, SIGNAL(stateUpdateReady()), mainWindow, SLOT(stateUpdateReady()));
+    connect(localNode, SIGNAL(stateUpdateUpdatingOthers()), mainWindow, SLOT(stateUpdateUpdatingOthers()));
 }
 
 void Manager::connectButtonClicked() {

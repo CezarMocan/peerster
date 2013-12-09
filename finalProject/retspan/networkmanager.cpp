@@ -75,6 +75,12 @@ void NetworkManager::receiveData() {
         } else if (type == Util::UPDATE_FINGER) {
             int position = variantMap[Util::POSITION].toInt();
             emit receivedUpdateFinger(node, position);
+        } else if (type == Util::CHORD_QUERY_PRED) {
+            key = variantMap[Util::KEY].toString();
+            emit receivedChordQueryPred(node, key);
+        } else if (type == Util::CHORD_REPLY_PRED) {
+            key = variantMap[Util::KEY].toString();
+            emit receivedChordReplyPred(key, node);
         }
         else {
             qDebug() << "Received message of unsupported type " + type;
