@@ -2,6 +2,7 @@
 #include <QString>
 #include <QPair>
 #include <QMap>
+#include <QDebug>
 
 #include "keyvaluestore.h"
 
@@ -19,6 +20,7 @@ QByteArray KeyValueStore::getFile(QString fileID) {
 }
 
 void KeyValueStore::updateKeywordList(QString keyword, QString fileID, QString fileName) {
+    qDebug() << "Update keyword list for " << keyword << " " << fileName;
     QPair<QString, QString> pairToUpdate(fileID, fileName);
 
     QMap<QString, QList<QPair<QString, QString> > >::iterator it = keywordToID->find(keyword);
@@ -32,7 +34,7 @@ void KeyValueStore::updateKeywordList(QString keyword, QString fileID, QString f
                 return;
         }
 
-        it.value().push_back(pairToUpdate);
+        (*keywordToID)[keyword].push_back(pairToUpdate);
     }
 }
 

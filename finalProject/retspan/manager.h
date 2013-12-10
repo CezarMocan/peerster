@@ -38,9 +38,9 @@ public slots:
     void receivedKeywordUpdate(QString keyword, QString fileID, QString fileName);
 
 private:
-    QMap<QString, QPair<QString, QPair<QString, QString> > > pendingQueries;
-    QMap<QString, QString> pendingKeywordQueries;
-    QMap<QString, QString> pendingKeywordResponses;
+    QMultiMap<QString, QPair<QString, QPair<QString, QString> > > pendingQueries;
+    QMultiMap<QString, QString> pendingKeywordQueries;
+    QMultiMap<QString, QString> pendingKeywordResponses;
 
 };
 

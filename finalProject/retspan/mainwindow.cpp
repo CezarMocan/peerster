@@ -64,10 +64,7 @@ void MainWindow::openFileDialog() {
     if (fileDialog->exec()) {
         fileNames = fileDialog->selectedFiles();
         fileDialog->hide();
-        for (int i = 0; i < fileNames.size(); i++) {
-            qDebug() << fileNames.at(i) << "\n";
-            emit(filesOpened(fileNames));
-        }
+        emit(filesOpened(fileNames));
     }
 }
 

@@ -35,24 +35,29 @@ Manager::Manager(QObject *parent) : QObject(parent) {
     connect(localNode, SIGNAL(updatedPredecessor(Node)), mainWindow, SLOT(updatedPredecessor(Node)));
 }
 
-void Manager::receivedReplyFromChord(QString key, Node node) {
+void Manager::receivedReplyFromChord(QString key, Node node) {    
     if (pendingQueries.find(key) != pendingQueries.end()) {
+        QPair<QString, QPair<QString, QString> > value = pendingQueries.value(key);
         QString keyword = pendingQueries.value(key).first;
         QString fileID = pendingQueries.value(key).second.first;
         QString fileName = pendingQueries.value(key).second.second;
         QByteArray datagram = Util::serializeVariantMap(Util::createKeywordUpdate(keyword, fileID, fileName));
         chordManager->sendData(node, datagram);
+        qDebug() << "Received reply from chord for: " << keyword << " " << fileName;
         qDebug() << "Sent keyword update to " << node.toString();
-        pendingQueries.remove(key);
+        pendingQueries.remove(key, value);
+        qDebug() << "Removed " << key << " from pendingQueries. Count now is " << pendingQueries.count(key) << "\n";
     }
 
     if (pendingKeywordQueries.find(key) != pendingKeywordQueries.end()) {
         QString keyword = pendingKeywordQueries.value(key);
         QByteArray datagram = Util::serializeVariantMap(Util::createKeywordQuery(keyword));
         chordManager->sendData(node, datagram);
-        pendingKeywordQueries.remove(key);
+        pendingKeywordQueries.remove(key, keyword);
         pendingKeywordResponses.insert(keyword, key);
     }
+
+    qDebug() << "Key " << key << " not found in any maps!";
 }
 
 void Manager::filesOpened(QStringList fileNames) {
@@ -64,8 +69,9 @@ void Manager::filesOpened(QStringList fileNames) {
 
             QPair<QString, QString> filePair(file.fileID, file.nameWithExtension);
             QPair<QString, QPair<QString, QString> > completePair(file.keywords[j], filePair);
-            qDebug() << "Button pressed! id = " << filePair.first << " name is " << filePair.second;
+            qDebug() << "id = " << filePair.first << " name is " << filePair.second << "for keyword " << file.keywords[j] << " i =" << i;
             pendingQueries.insert(keywordID, completePair);
+            qDebug() << "Inserted " << keywordID << " in map, count is " << pendingQueries.count(keywordID) << "\n";
             localNode->chordQuery(keywordID);
         }
     }
@@ -80,7 +86,9 @@ void Manager::receivedKeywordQuery(Node from, QString keyword) {
 void Manager::receivedKeywordReply(QString keyword, QVariantList ids, QVariantList names) {
     if (pendingKeywordResponses.find(keyword) != pendingKeywordResponses.end()) {
         qDebug() << "Received keyword reply for keyword " << keyword << " of size " << names.size();
+        QString value = pendingKeywordResponses.value(keyword);
         emit(keywordSearchReturned(ids, names));
+        pendingKeywordResponses.remove(keyword, value);
     } else {
         qDebug() << "Received keyword reply for unwanted keyword NOOOOOOO!!!";
     }

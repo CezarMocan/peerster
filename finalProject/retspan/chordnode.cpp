@@ -117,7 +117,7 @@ void ChordNode::updateOthers(int position) {
         return;
     }
 
-    qDebug() << "Update others position = " << position;
+    //qDebug() << "Update others position = " << position;
 
     QString powerOfTwo = Util::ONE;
 
@@ -127,8 +127,8 @@ void ChordNode::updateOthers(int position) {
     }
 
     QString currentKey = Util::difference(localhost->getID(), powerOfTwo);
-    qDebug() << "Current key = " << currentKey << " power of 2 = " << powerOfTwo;
-    qDebug() << "Creating chord_pred_query in updateOthers";
+    //qDebug() << "Current key = " << currentKey << " power of 2 = " << powerOfTwo;
+    //qDebug() << "Creating chord_pred_query in updateOthers";
     QByteArray datagram = Util::serializeVariantMap(Util::createChordQueryPred(*localhost, currentKey));
 
     sentUpdateOthers.insert(currentKey, position);
@@ -136,31 +136,31 @@ void ChordNode::updateOthers(int position) {
 }
 
 void ChordNode::receivedChordQueryPred(Node from, QString key) {
-    qDebug() << "Received chord_query_pred from " << from.toString() << "key = " << key;
+    //qDebug() << "Received chord_query_pred from " << from.toString() << "key = " << key;
     Node fingerPredecessor = findFingerPredecessor(key);
     if (fingerPredecessor == (*localhost) || key == localhost->getID()) {
         QByteArray datagram = Util::serializeVariantMap(Util::createChordReplyPred(key, *localhost));
-        qDebug() << "    response is " << localhost->toString();
+        //qDebug() << "    response is " << localhost->toString();
         chordManager->sendData(from, datagram);
     } else {
-        qDebug() << "Creating chord query in receivedChordQueryPred to " << fingerPredecessor.toString();
+        //qDebug() << "Creating chord query in receivedChordQueryPred to " << fingerPredecessor.toString();
         QByteArray datagram = Util::serializeVariantMap(Util::createChordQueryPred(from, key));
         chordManager->sendData(fingerPredecessor, datagram);
     }
 }
 
 void ChordNode::receivedChordReplyPred(QString key, Node value) {
-    qDebug() << "Received chord reply pred for key " << key << " value = " << value.toString();
+    //qDebug() << "Received chord reply pred for key " << key << " value = " << value.toString();
     if (this->state == UPDATING_OTHERS) {
         if (sentUpdateOthers.find(key) == sentUpdateOthers.end()) {
-            qDebug() << "Received reply for a key that I did not request in update others state! " << key << "\n";
+           // qDebug() << "Received reply for a key that I did not request in update others state! " << key << "\n";
             return;
         }
 
         int position = sentUpdateOthers.find(key).value();
         sentUpdateOthers.remove(key);
 
-        qDebug() << "Received chord predecessor reply for key = " << key << " " << value.toString();
+        //qDebug() << "Received chord predecessor reply for key = " << key << " " << value.toString();
         if (value == *localhost) {
             updateOthers(Util::KEYSPACE_SIZE);
             return;
@@ -176,17 +176,17 @@ void ChordNode::chordQuery(QString key) {
 }
 
 void ChordNode::receivedChordQuery(Node from, QString key) {
-    qDebug() << "received chord query from " << from.toString() << " key = " << key;
+    //qDebug() << "received chord query from " << from.toString() << " key = " << key;
 
     Node fingerPredecessor = findFingerPredecessor(key);
     Node successor = fingerTable->at(0).succ;
 
     if (fingerPredecessor == (*localhost)) {
         QByteArray datagram = Util::serializeVariantMap(Util::createChordReply(key, successor));
-        qDebug() << "    response is " << successor.toString();
+        //qDebug() << "    response is " << successor.toString();
         chordManager->sendData(from, datagram);
     } else {
-        qDebug() << "Creating chord query in receivedChordQuery to " << fingerPredecessor.toString();
+        //qDebug() << "Creating chord query in receivedChordQuery to " << fingerPredecessor.toString();
         QByteArray datagram = Util::serializeVariantMap(Util::createChordQuery(from, key));
         chordManager->sendData(fingerPredecessor, datagram);
     }
@@ -194,7 +194,7 @@ void ChordNode::receivedChordQuery(Node from, QString key) {
 
 void ChordNode::receivedChordReply(QString key, Node value) {
     emit receivedReplyFromChord(key, value);
-    qDebug() << "Received chord reply for key " << key << " value = " << value.toString();
+    //qDebug() << "Received chord reply for key " << key << " value = " << value.toString();
     if (this->state == INITIALIZING) {
         if (sentQueries.find(key) == sentQueries.end()) {
             qDebug() << "Received reply for a key that I did not request! " << key << "\n";
@@ -204,10 +204,10 @@ void ChordNode::receivedChordReply(QString key, Node value) {
         // Ask for predecessor and then update finger table
         int position = sentQueries.find(key).value();
         sentQueries.remove(key);
-        qDebug() << "    Position is " << position;
+        //qDebug() << "    Position is " << position;
 
         if (position == 0) {
-            qDebug() << "    Creating get predecessor request to " << value.toString();
+            //qDebug() << "    Creating get predecessor request to " << value.toString();
             QByteArray datagram = Util::serializeVariantMap(Util::createGetPredecessor(*localhost, position));
             chordManager->sendData(value, datagram);
         }
@@ -215,7 +215,7 @@ void ChordNode::receivedChordReply(QString key, Node value) {
         (*fingerTable)[position].succ = value;
         // send next query here; change state to UPDATE_OTHERS after finishing with all the queries
         for (int i = position + 1; i < Util::KEYSPACE_SIZE; i++) {
-            qDebug() << "receivedChordReply for position " << i;
+            //qDebug() << "receivedChordReply for position " << i;
             if (Util::intervalContainsKey(localhost->getID(), (*fingerTable)[i - 1].succ.getID(), (*fingerTable)[i].start)) {
                 (*fingerTable)[i].succ = (*fingerTable)[i - 1].succ;
             } else {
@@ -230,7 +230,7 @@ void ChordNode::receivedChordReply(QString key, Node value) {
             this->state = UPDATING_OTHERS;
             emit(updatedFingerTable(*fingerTable));
             emit(stateUpdateUpdatingOthers());
-            qDebug() << "State UPDATING_OTHERS for node " << this->localhost->toString();
+            //qDebug() << "State UPDATING_OTHERS for node " << this->localhost->toString();
             updateOthers(0);
         }
     } else if (this->state == UPDATING_OTHERS) {
@@ -241,18 +241,18 @@ void ChordNode::receivedChordReply(QString key, Node value) {
 }
 
 void ChordNode::receivedGetPredecessorRequest(Node from, int position) {
-    qDebug() << "Got get predecessor request from " << from.toString() << " predecessor is " << this->predecessor.toString() << "\n";
+    //qDebug() << "Got get predecessor request from " << from.toString() << " predecessor is " << this->predecessor.toString() << "\n";
 
     QByteArray datagram = Util::serializeVariantMap(Util::createGetPredecessorReply(this->predecessor, position));
     chordManager->sendData(from, datagram);
 }
 
 void ChordNode::receivedGetPredecessorReply(Node neighbour, Node predecessor, int position) {
-    qDebug() << "Received get predecessor reply from " << neighbour.toString() << " predecessor is " << predecessor.toString();
-    qDebug() << "Position is " << position;
+    //qDebug() << "Received get predecessor reply from " << neighbour.toString() << " predecessor is " << predecessor.toString();
+    //qDebug() << "Position is " << position;
     if (this->state == INITIALIZING) {
         if (position == 0) {
-            qDebug() << "Updating predecessors! ";
+            //qDebug() << "Updating predecessors! ";
             this->predecessor = Node(predecessor);
             emit(updatedPredecessor(this->predecessor));
             QByteArray datagram = Util::serializeVariantMap(Util::createUpdatePredecessor(*localhost));
@@ -285,8 +285,8 @@ void ChordNode::receivedUpdatePredecessor(Node newPredecessor) {
 }
 
 void ChordNode::receivedUpdateFinger(Node newFinger, int position) {
-    qDebug() << "Received update finger for position " << position << "with node " << newFinger.toString();
-    qDebug() << "    " << this->localhost->getID() << (*fingerTable)[position].succ.getID() << newFinger.getID();
+    //qDebug() << "Received update finger for position " << position << "with node " << newFinger.toString();
+    //qDebug() << "    " << this->localhost->getID() << (*fingerTable)[position].succ.getID() << newFinger.getID();
 
     if (Util::intervalContainsKey(this->localhost->getID(), (*fingerTable)[position].succ.getID(), newFinger.getID())) {
         (*fingerTable)[position].succ = newFinger;
