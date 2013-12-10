@@ -81,6 +81,19 @@ void NetworkManager::receiveData() {
         } else if (type == Util::CHORD_REPLY_PRED) {
             key = variantMap[Util::KEY].toString();
             emit receivedChordReplyPred(key, node);
+        } else if (type == Util::KEYWORD_QUERY) {
+            QString keyword = variantMap[Util::KEYWORD].toString();
+            emit receivedKeywordQuery(sender, keyword);
+        } else if (type == Util::KEYWORD_REPLY) {
+            QString keyword = variantMap[Util::KEYWORD].toString();
+            QVariantList names = variantMap[Util::NAMES].toList();
+            QVariantList ids = variantMap[Util::IDS].toList();
+            emit receivedKeywordReply(keyword, ids, names);
+        } else if (type == Util::KEYWORD_UPDATE) {
+            QString keyword = variantMap[Util::KEYWORD].toString();
+            QString fileID = variantMap[Util::IDS].toString();
+            QString fileName = variantMap[Util::NAMES].toString();
+            emit receivedKeywordUpdate(keyword, fileID, fileName);
         }
         else {
             qDebug() << "Received message of unsupported type " + type;

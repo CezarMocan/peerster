@@ -15,12 +15,22 @@ QString Util::POSITION = QString("POSITION");
 
 QString Util::CHORD_QUERY = QString("CHORD_QUERY");
 QString Util::CHORD_REPLY = QString("CHORD_REPLY");
+
 QString Util::CHORD_QUERY_PRED = QString("CHORD_QUERY_PRED");
 QString Util::CHORD_REPLY_PRED = QString("CHORD_REPLY_PRED");
+
 QString Util::GET_PREDECESSOR = QString("GET_PREDECESSOR");
 QString Util::GET_PREDECESSOR_REPLY = QString("GET_PREDECESSOR_REPLY");
+
 QString Util::UPDATE_PREDECESSOR = QString("UPDATE_PREDECESSOR");
 QString Util::UPDATE_FINGER = QString("UPDATE_FINGER");
+
+QString Util::KEYWORD_QUERY = QString("KEYWORD_QUERY");
+QString Util::KEYWORD_UPDATE = QString("KEYWORD_UPDATE");
+QString Util::KEYWORD_REPLY = QString("KEYWORD_REPLY");
+QString Util::KEYWORD = QString("KEYWORD");
+QString Util::IDS = QString("IDS");
+QString Util::NAMES = QString("NAMES");
 
 /*
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
@@ -29,10 +39,10 @@ QString Util::ZERO = "0000000000000000000000000000000000000000";
 int Util::KEYSPACE_SIZE = 160;
 */
 
-QString Util::MAX_VALUE = "ff";
-QString Util::ONE = "01";
-QString Util::ZERO = "00";
-int Util::KEYSPACE_SIZE = 8;
+QString Util::MAX_VALUE = "ffff";
+QString Util::ONE = "0001";
+QString Util::ZERO = "0000";
+int Util::KEYSPACE_SIZE = 16;
 
 QString Util::createNodeID(QString name) {
 
@@ -40,7 +50,28 @@ QString Util::createNodeID(QString name) {
     block.append(name);
     QString result = (QCA::Hash("sha1").hashToString(block));
 
-    return result.left(2);
+    return result.left(KEYSPACE_SIZE / 4);
+}
+
+QString Util::hashName(QString name) {
+    return createNodeID(name);
+}
+
+QString Util::hashFileContents(QByteArray fileContents) {
+    return QCA::Hash("sha1").hashToString(fileContents).left(KEYSPACE_SIZE / 4);
+}
+
+QString Util::normalizeKeyword(QString currentKeyword) {
+    QString correctedKeyword;
+
+    for (int j = 0; j < currentKeyword.size(); j++) {
+        if (currentKeyword[j] >= 'A' && currentKeyword[j] <= 'Z')
+            currentKeyword[j] = currentKeyword[j].toAscii() - 'A' + 'a';
+        if ((currentKeyword[j] >= 'a' && currentKeyword[j] <= 'z') || (currentKeyword[j] >= '0' && currentKeyword[j] <= '9'))
+            correctedKeyword.append(currentKeyword[j]);
+    }
+
+    return correctedKeyword;
 }
 
 QString Util::getCircleDifference(QString key1, QString key2) {
@@ -233,6 +264,43 @@ QVariantMap Util::createUpdateFinger(Node newFinger, int position) {
     return result;
 
 }
+
+QVariantMap Util::createKeywordQuery(QString keyword) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(KEYWORD_QUERY));
+    result.insert(KEYWORD, QVariant(keyword));
+
+    return result;
+}
+
+QVariantMap Util::createKeywordReply(QString keyword, QList<QPair<QString, QString> > results) {
+    QVariantMap result;
+    QVariantList ids, names;
+    result.insert(TYPE, QVariant(KEYWORD_REPLY));
+    result.insert(KEYWORD, QVariant(keyword));
+
+    for (int i = 0; i < results.size(); i++) {
+        ids.append(QVariant(results[i].first));
+        names.append(QVariant(results[i].second));
+    }
+
+    result.insert(IDS, ids);
+    result.insert(NAMES, names);
+
+    return result;
+}
+
+QVariantMap Util::createKeywordUpdate(QString keyword, QString fileID, QString fileName) {
+    QVariantMap result;
+    qDebug() << "Creating keyword update message " << keyword << fileID << fileName;
+    result.insert(TYPE, QVariant(KEYWORD_UPDATE));
+    result.insert(KEYWORD, QVariant(keyword));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(NAMES, QVariant(fileName));
+
+    return result;
+}
+
 
 void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node) {
     node.setAddressString(variantMap[NODE_ADDRESS].toString());

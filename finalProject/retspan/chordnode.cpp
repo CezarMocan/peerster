@@ -171,6 +171,10 @@ void ChordNode::receivedChordReplyPred(QString key, Node value) {
     }
 }
 
+void ChordNode::chordQuery(QString key) {
+    receivedChordQuery(*localhost, key);
+}
+
 void ChordNode::receivedChordQuery(Node from, QString key) {
     qDebug() << "received chord query from " << from.toString() << " key = " << key;
 
@@ -189,6 +193,7 @@ void ChordNode::receivedChordQuery(Node from, QString key) {
 }
 
 void ChordNode::receivedChordReply(QString key, Node value) {
+    emit receivedReplyFromChord(key, value);
     qDebug() << "Received chord reply for key " << key << " value = " << value.toString();
     if (this->state == INITIALIZING) {
         if (sentQueries.find(key) == sentQueries.end()) {
@@ -207,13 +212,7 @@ void ChordNode::receivedChordReply(QString key, Node value) {
             chordManager->sendData(value, datagram);
         }
 
-        // Update finger table
-        //QString start = fingerTable->at(position).start;
-        //if (Util::getCircleDifference(start, value.getID()) < Util::getCircleDifference(start, localhost->getID()))
-            (*fingerTable)[position].succ = value;
-        //else
-//            (*fingerTable)[position].succ = *localhost;
-
+        (*fingerTable)[position].succ = value;
         // send next query here; change state to UPDATE_OTHERS after finishing with all the queries
         for (int i = position + 1; i < Util::KEYSPACE_SIZE; i++) {
             qDebug() << "receivedChordReply for position " << i;
@@ -237,7 +236,7 @@ void ChordNode::receivedChordReply(QString key, Node value) {
     } else if (this->state == UPDATING_OTHERS) {
         // wind.. vjhhhhhhhh
     } else {
-        //emit receivedReplyFromChord(key, value);
+
     }
 }
 

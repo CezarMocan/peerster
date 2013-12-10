@@ -33,10 +33,20 @@ public:
     static QString GET_PREDECESSOR_REPLY;
     static QString UPDATE_PREDECESSOR;
     static QString UPDATE_FINGER;
-
+    static QString KEYWORD_QUERY;
+    static QString KEYWORD_UPDATE;
+    static QString KEYWORD_REPLY;
+    static QString KEYWORD;
+    static QString IDS;
+    static QString NAMES;
 
     Util();
     static QString createNodeID(QString name);
+    static QString hashName(QString name);
+    static QString hashFileContents(QByteArray fileContents);
+
+    static QString normalizeKeyword(QString keyword);
+
     static QString getCircleDifference(QString key1, QString key2);
     static QString difference(QString key1, QString key2);
     static QString addition(QString key1, QString key2);
@@ -53,6 +63,9 @@ public:
     static QVariantMap createGetPredecessorReply(Node predecessor, int position);
     static QVariantMap createUpdatePredecessor(Node newPredecessor);
     static QVariantMap createUpdateFinger(Node newFinger, int position);
+    static QVariantMap createKeywordQuery(QString keyword);
+    static QVariantMap createKeywordReply(QString keyword, QList<QPair<QString, QString> > results);
+    static QVariantMap createKeywordUpdate(QString keyword, QString fileID, QString fileName);
 
     static void parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node);
     static void parseVariantMapKey(QVariantMap variantMap, QString &key);

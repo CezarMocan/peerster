@@ -22,13 +22,19 @@ SOURCES += main.cpp\
     node.cpp \
     util.cpp \
     manager.cpp \
-    fingerentry.cpp
+    fingerentry.cpp \
+    filemanager.cpp \
+    file.cpp \
+    keyvaluestore.cpp
 
 HEADERS  += mainwindow.h \
     chordnode.h \
     networkmanager.h \
     node.h \
     util.h \
-    manager.h
+    manager.h \
+    filemanager.h \
+    file.h \
+    keyvaluestore.h
 
 FORMS    += mainwindow.ui

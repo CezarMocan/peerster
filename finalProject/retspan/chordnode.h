@@ -19,6 +19,7 @@ public:
     explicit ChordNode(NetworkManager *chordManager, Node *localhost, QObject *parent = 0);    
     Node findFingerSuccessor(QString key);
     Node findFingerPredecessor(QString key);
+    void chordQuery(QString key);
 
 signals:
     void receivedReplyFromChord(QString key, Node value);

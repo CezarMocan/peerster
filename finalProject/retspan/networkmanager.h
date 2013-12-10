@@ -25,6 +25,9 @@ signals:
     void receivedUpdateFinger(Node newFinger, int position);
     void receivedChordQueryPred(Node from, QString key);
     void receivedChordReplyPred(QString key, Node value);
+    void receivedKeywordQuery(Node from, QString keyword);
+    void receivedKeywordReply(QString keyword, QVariantList ids, QVariantList names);
+    void receivedKeywordUpdate(QString keyword, QString fileID, QString fileName);
 
 
 public slots:
