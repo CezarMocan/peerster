@@ -32,6 +32,18 @@ QString Util::KEYWORD = QString("KEYWORD");
 QString Util::IDS = QString("IDS");
 QString Util::NAMES = QString("NAMES");
 
+QString Util::DOWNLOAD_REQUEST = QString("DOWNLOAD_REQUEST");
+QString Util::DOWNLOAD_REPLY = QString("DOWNLOAD_REPLY");
+QString Util::DOWNLOAD_BLOCK_REQUEST = QString("DOWNLOAD_BLOCK_REQUEST");
+QString Util::DOWNLOAD_BLOCK_REPLY = QString("DOWNLOAD_BLOCK_REPLY");
+
+QString Util::FILE_SIZE = QString("FILE_SIZE");
+QString Util::NO_BLOCKS = QString("NO_BLOCKS");
+QString Util::BLOCK_CONTENTS = QString("BLOCK_CONTENTS");
+QString Util::BLOCK_NUMBER = QString("BLOCK_NUMBER");
+
+QString Util::UPLOAD_NOTIFICATION = QString("UPLOAD_NOTIFICATION");
+
 /*
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
 QString Util::ONE = "0000000000000000000000000000000000000001";
@@ -291,8 +303,7 @@ QVariantMap Util::createKeywordReply(QString keyword, QList<QPair<QString, QStri
 }
 
 QVariantMap Util::createKeywordUpdate(QString keyword, QString fileID, QString fileName) {
-    QVariantMap result;
-    qDebug() << "Creating keyword update message " << keyword << fileID << fileName;
+    QVariantMap result;    
     result.insert(TYPE, QVariant(KEYWORD_UPDATE));
     result.insert(KEYWORD, QVariant(keyword));
     result.insert(IDS, QVariant(fileID));
@@ -301,6 +312,51 @@ QVariantMap Util::createKeywordUpdate(QString keyword, QString fileID, QString f
     return result;
 }
 
+QVariantMap Util::createDownloadRequest(QString fileID) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_REQUEST));
+    result.insert(IDS, QVariant(fileID));
+
+    return result;
+}
+
+QVariantMap Util::createDownloadReply(QString fileID, quint32 fileSize, quint32 noBlocks) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_REPLY));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(FILE_SIZE, QVariant(fileSize));
+    result.insert(NO_BLOCKS, QVariant(noBlocks));
+
+    return result;
+
+}
+
+QVariantMap Util::createDownloadBlockRequest(QString fileID, quint32 block) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_BLOCK_REQUEST));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(BLOCK_NUMBER, QVariant(block));
+
+    return result;
+}
+
+QVariantMap Util::createDownloadBlockReply(QString fileID, quint32 block, QByteArray blockContents) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_BLOCK_REPLY));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(BLOCK_NUMBER, QVariant(block));
+    result.insert(BLOCK_CONTENTS, QVariant(blockContents));
+
+    return result;
+}
+
+QVariantMap Util::createUploadNotification(QString fileID) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(UPLOAD_NOTIFICATION));
+    result.insert(IDS, QVariant(fileID));
+
+    return result;
+}
 
 void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node) {
     node.setAddressString(variantMap[NODE_ADDRESS].toString());

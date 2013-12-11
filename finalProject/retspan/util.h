@@ -40,6 +40,19 @@ public:
     static QString IDS;
     static QString NAMES;
 
+    static QString DOWNLOAD_REQUEST;
+    static QString DOWNLOAD_REPLY;
+    static QString DOWNLOAD_BLOCK_REQUEST;
+    static QString DOWNLOAD_BLOCK_REPLY;
+
+    static QString FILE_SIZE;
+    static QString NO_BLOCKS;
+    static QString BLOCK_CONTENTS;
+    static QString BLOCK_NUMBER;
+
+    static QString UPLOAD_NOTIFICATION;
+
+
     Util();
     static QString createNodeID(QString name);
     static QString hashName(QString name);
@@ -66,6 +79,13 @@ public:
     static QVariantMap createKeywordQuery(QString keyword);
     static QVariantMap createKeywordReply(QString keyword, QList<QPair<QString, QString> > results);
     static QVariantMap createKeywordUpdate(QString keyword, QString fileID, QString fileName);
+
+    static QVariantMap createDownloadRequest(QString fileID);
+    static QVariantMap createDownloadReply(QString fileID, quint32 fileSize, quint32 noBlocks);
+    static QVariantMap createDownloadBlockRequest(QString fileID, quint32 block);
+    static QVariantMap createDownloadBlockReply(QString fileID, quint32 block, QByteArray blockContents);
+
+    static QVariantMap createUploadNotification(QString fileID);
 
     static void parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node);
     static void parseVariantMapKey(QVariantMap variantMap, QString &key);

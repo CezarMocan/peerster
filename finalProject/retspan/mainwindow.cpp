@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
     tableWidgetSearchResults = findChild<QTableWidget*>("tableWidgetSearchResults");
     tableWidgetSearchResults->setColumnWidth(0, 300);
     tableWidgetSearchResults->setColumnWidth(1, 100);
+    tableWidgetSearchResults->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     fileDialog = new QFileDialog(this);
     fileDialog->setFileMode(QFileDialog::ExistingFiles);
@@ -72,11 +73,14 @@ void MainWindow::keywordSearchReturned(QVariantList ids, QVariantList names) {
     tableWidgetSearchResults->setRowCount(names.size());
 
     for (int i = 0; i < names.size(); i++) {
-        QString name = names[i].toString();
-        QString id = ids[i].toString();
+        QTableWidgetItem *name = new QTableWidgetItem(names[i].toString());
+        name->setFlags(name->flags() & (~Qt::ItemIsEditable));
+        QTableWidgetItem *id = new QTableWidgetItem(ids[i].toString());
+        id->setFlags(name->flags() & (~Qt::ItemIsEditable));
         qDebug() << "Keyword search returned with name: " << name;
-        tableWidgetSearchResults->setItem(i, 0, new QTableWidgetItem(name));
-        tableWidgetSearchResults->setItem(i, 1, new QTableWidgetItem(id));
+
+        tableWidgetSearchResults->setItem(i, 0, name);
+        tableWidgetSearchResults->setItem(i, 1, id);
     }
 }
 

@@ -11,6 +11,8 @@
 #include "node.h"
 #include "util.h"
 #include "keyvaluestore.h"
+#include "filemanager.h"
+#include "file.h"
 
 
 class Manager : public QObject
@@ -23,6 +25,7 @@ public:
     ChordNode *localNode;
     MainWindow *mainWindow;
     KeyValueStore *kvs;
+    FileManager *fileManager;
 
 signals:
     void connectButtonPushed(Node neighbour);
@@ -36,11 +39,15 @@ public slots:
     void receivedKeywordQuery(Node from, QString keyword);
     void receivedKeywordReply(QString keyword, QVariantList ids, QVariantList names);
     void receivedKeywordUpdate(QString keyword, QString fileID, QString fileName);
+    void gotDownloadRequest(int row, int column);
 
 private:
+    QMap<QString, bool> pendingFileQueries;
+
     QMultiMap<QString, QPair<QString, QPair<QString, QString> > > pendingQueries;
     QMultiMap<QString, QString> pendingKeywordQueries;
     QMultiMap<QString, QString> pendingKeywordResponses;
+    QMultiMap<QString, QString> pendingDownloadRequest;
 
 };
 
