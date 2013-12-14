@@ -28,6 +28,8 @@ public:
     void setPort(quint16 port);
     void setID(QString ID);
 
+    QString downloadsFolder;
+
 signals:
 
 public slots:
@@ -35,7 +37,7 @@ public slots:
 private:
     QHostAddress address;
     quint16 port;
-    QString ID;    
+    QString ID;
 };
 
 #endif // NODE_H

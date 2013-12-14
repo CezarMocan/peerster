@@ -111,9 +111,16 @@ void ChordNode::updateOthers(int position) {
         }
         printFingerTable();
         qDebug() << "State is READY!";
-        this->state = READY;
+        this->state = READY;        
         emit(stateUpdateReady());
-        //TODO: Key exchange
+
+        Node successor = (*fingerTable)[0].succ;
+        QByteArray datagram = Util::serializeVariantMap(Util::createKeysMotherfucker());
+
+        chordManager->sendData(successor, datagram);
+
+        qDebug() << "Sent keys motherfucker to " << successor.toString();
+
         return;
     }
 

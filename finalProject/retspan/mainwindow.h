@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QTableWidget>
 #include <QFileDialog>
+#include <QList>
 
 #include "node.h"
 #include "fingerentry.h"
@@ -35,6 +36,7 @@ public:
     QLineEdit *lineEditSearch;
     QPushButton *buttonSearch;
     QTableWidget *tableWidgetSearchResults;
+    QTableWidget *tableWidgetKeyList;
 
 private:
     Ui::MainWindow *ui;    
@@ -49,6 +51,7 @@ public slots:
     void updatedPredecessor(Node predecessor);
     void openFileDialog();
     void keywordSearchReturned(QVariantList ids, QVariantList names);
+    void updatedKVS(QList<QString> keywords, QList<QString> files);
 
 };
 

@@ -6,12 +6,13 @@
 
 #include "networkmanager.h"
 #include "keyvaluestore.h"
+#include "mainwindow.h"
 
 class FileManager : public QObject
 {
     Q_OBJECT
 public:
-    explicit FileManager(NetworkManager *networkManager, KeyValueStore *kvs, QObject *parent = 0);
+    explicit FileManager(NetworkManager *networkManager, KeyValueStore *kvs, MainWindow *mainWindow, QObject *parent = 0);
     void downloadFile(QString fileID, Node owner, QString fileName, bool goToKVS);
     void uploadFile(QString fileID, Node owner);
 
@@ -24,10 +25,12 @@ public slots:
     void receivedDownloadBlockRequest(Node from, QString fileID, quint32 block);
     void receivedDownloadBlockReply(QString fileID, quint32 block, QByteArray blockContents);
     void receivedUploadNotification(Node from, QString fileID);
+    void receivedKeysMotherfucker(Node from);
 
 private:
     NetworkManager *networkManager;
     KeyValueStore *kvs;
+    MainWindow *mainWindow;
 
     QMap<QString, bool> goesToKVS;
     QMap<QString, bool> removeFromKVS;

@@ -48,6 +48,9 @@ public:
     QLineEdit *lineEditPort;
     QLabel *label_4;
     QLabel *label_6;
+    QWidget *tab;
+    QLabel *label_10;
+    QTableWidget *tableWidgetKeyList;
     QWidget *tab_2;
     QPushButton *buttonShareFile;
     QWidget *searchTab;
@@ -125,6 +128,21 @@ public:
         label_6->setObjectName(QString::fromUtf8("label_6"));
         label_6->setGeometry(QRect(10, 260, 81, 16));
         tabWidget->addTab(ChordTab, QString());
+        tab = new QWidget();
+        tab->setObjectName(QString::fromUtf8("tab"));
+        label_10 = new QLabel(tab);
+        label_10->setObjectName(QString::fromUtf8("label_10"));
+        label_10->setGeometry(QRect(150, 20, 151, 16));
+        tableWidgetKeyList = new QTableWidget(tab);
+        if (tableWidgetKeyList->columnCount() < 2)
+            tableWidgetKeyList->setColumnCount(2);
+        QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
+        tableWidgetKeyList->setHorizontalHeaderItem(0, __qtablewidgetitem3);
+        QTableWidgetItem *__qtablewidgetitem4 = new QTableWidgetItem();
+        tableWidgetKeyList->setHorizontalHeaderItem(1, __qtablewidgetitem4);
+        tableWidgetKeyList->setObjectName(QString::fromUtf8("tableWidgetKeyList"));
+        tableWidgetKeyList->setGeometry(QRect(35, 60, 371, 351));
+        tabWidget->addTab(tab, QString());
         tab_2 = new QWidget();
         tab_2->setObjectName(QString::fromUtf8("tab_2"));
         buttonShareFile = new QPushButton(tab_2);
@@ -145,10 +163,10 @@ public:
         tableWidgetSearchResults = new QTableWidget(searchTab);
         if (tableWidgetSearchResults->columnCount() < 2)
             tableWidgetSearchResults->setColumnCount(2);
-        QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
-        tableWidgetSearchResults->setHorizontalHeaderItem(0, __qtablewidgetitem3);
-        QTableWidgetItem *__qtablewidgetitem4 = new QTableWidgetItem();
-        tableWidgetSearchResults->setHorizontalHeaderItem(1, __qtablewidgetitem4);
+        QTableWidgetItem *__qtablewidgetitem5 = new QTableWidgetItem();
+        tableWidgetSearchResults->setHorizontalHeaderItem(0, __qtablewidgetitem5);
+        QTableWidgetItem *__qtablewidgetitem6 = new QTableWidgetItem();
+        tableWidgetSearchResults->setHorizontalHeaderItem(1, __qtablewidgetitem6);
         tableWidgetSearchResults->setObjectName(QString::fromUtf8("tableWidgetSearchResults"));
         tableWidgetSearchResults->setGeometry(QRect(10, 151, 411, 271));
         label_9 = new QLabel(searchTab);
@@ -176,7 +194,7 @@ public:
 
         retranslateUi(MainWindow);
 
-        tabWidget->setCurrentIndex(0);
+        tabWidget->setCurrentIndex(1);
 
 
         QMetaObject::connectSlotsByName(MainWindow);
@@ -203,14 +221,20 @@ public:
         label_4->setText(QApplication::translate("MainWindow", "Address", 0, QApplication::UnicodeUTF8));
         label_6->setText(QApplication::translate("MainWindow", "Predecessor: ", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(ChordTab), QApplication::translate("MainWindow", "Chord info", 0, QApplication::UnicodeUTF8));
+        label_10->setText(QApplication::translate("MainWindow", "Keys held by this node:", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem3 = tableWidgetKeyList->horizontalHeaderItem(0);
+        ___qtablewidgetitem3->setText(QApplication::translate("MainWindow", "Key", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem4 = tableWidgetKeyList->horizontalHeaderItem(1);
+        ___qtablewidgetitem4->setText(QApplication::translate("MainWindow", "Type", 0, QApplication::UnicodeUTF8));
+        tabWidget->setTabText(tabWidget->indexOf(tab), QApplication::translate("MainWindow", "Local Key-Valye store", 0, QApplication::UnicodeUTF8));
         buttonShareFile->setText(QApplication::translate("MainWindow", "Share file!", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(tab_2), QApplication::translate("MainWindow", "File upload", 0, QApplication::UnicodeUTF8));
         buttonSearch->setText(QApplication::translate("MainWindow", "Search!", 0, QApplication::UnicodeUTF8));
         label_8->setText(QApplication::translate("MainWindow", "Keyword", 0, QApplication::UnicodeUTF8));
-        QTableWidgetItem *___qtablewidgetitem3 = tableWidgetSearchResults->horizontalHeaderItem(0);
-        ___qtablewidgetitem3->setText(QApplication::translate("MainWindow", "Name", 0, QApplication::UnicodeUTF8));
-        QTableWidgetItem *___qtablewidgetitem4 = tableWidgetSearchResults->horizontalHeaderItem(1);
-        ___qtablewidgetitem4->setText(QApplication::translate("MainWindow", "ID", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem5 = tableWidgetSearchResults->horizontalHeaderItem(0);
+        ___qtablewidgetitem5->setText(QApplication::translate("MainWindow", "Name", 0, QApplication::UnicodeUTF8));
+        QTableWidgetItem *___qtablewidgetitem6 = tableWidgetSearchResults->horizontalHeaderItem(1);
+        ___qtablewidgetitem6->setText(QApplication::translate("MainWindow", "ID", 0, QApplication::UnicodeUTF8));
         label_9->setText(QApplication::translate("MainWindow", "Results", 0, QApplication::UnicodeUTF8));
         tabWidget->setTabText(tabWidget->indexOf(searchTab), QApplication::translate("MainWindow", "Search", 0, QApplication::UnicodeUTF8));
         menuChord_lookup->setTitle(QApplication::translate("MainWindow", "Chord lookup", 0, QApplication::UnicodeUTF8));

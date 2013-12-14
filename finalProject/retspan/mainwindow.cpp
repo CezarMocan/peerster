@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "file.h"
+#include "util.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -21,6 +22,11 @@ MainWindow::MainWindow(QWidget *parent) :
     tableWidgetSearchResults->setColumnWidth(0, 300);
     tableWidgetSearchResults->setColumnWidth(1, 100);
     tableWidgetSearchResults->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+    tableWidgetKeyList = findChild<QTableWidget*>("tableWidgetKeyList");
+    tableWidgetKeyList->setColumnWidth(0, 250);
+    tableWidgetKeyList->setColumnWidth(1, 100);
+    tableWidgetKeyList->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     fileDialog = new QFileDialog(this);
     fileDialog->setFileMode(QFileDialog::ExistingFiles);
@@ -76,7 +82,7 @@ void MainWindow::keywordSearchReturned(QVariantList ids, QVariantList names) {
         QTableWidgetItem *name = new QTableWidgetItem(names[i].toString());
         name->setFlags(name->flags() & (~Qt::ItemIsEditable));
         QTableWidgetItem *id = new QTableWidgetItem(ids[i].toString());
-        id->setFlags(name->flags() & (~Qt::ItemIsEditable));
+        id->setFlags(id->flags() & (~Qt::ItemIsEditable));
         qDebug() << "Keyword search returned with name: " << name;
 
         tableWidgetSearchResults->setItem(i, 0, name);
@@ -84,3 +90,25 @@ void MainWindow::keywordSearchReturned(QVariantList ids, QVariantList names) {
     }
 }
 
+void MainWindow::updatedKVS(QList<QString> keywords, QList<QString> files) {
+    tableWidgetKeyList->setRowCount(keywords.size() + files.size());
+    for (int i = 0; i < keywords.size(); i++) {
+        QTableWidgetItem *id = new QTableWidgetItem(keywords[i] + " (" + Util::hashName(keywords[i]) + ")");
+        id->setFlags(id->flags() & (~Qt::ItemIsEditable));
+        QTableWidgetItem *type = new QTableWidgetItem("keyword");
+        type->setFlags(type->flags() & (~Qt::ItemIsEditable));
+
+        tableWidgetKeyList->setItem(i, 0, id);
+        tableWidgetKeyList->setItem(i, 1, type);
+    }
+
+    for (int i = 0; i < files.size(); i++) {
+        QTableWidgetItem *id = new QTableWidgetItem(files[i]);
+        id->setFlags(id->flags() & (~Qt::ItemIsEditable));
+        QTableWidgetItem *type = new QTableWidgetItem("file");
+        type->setFlags(type->flags() & (~Qt::ItemIsEditable));
+
+        tableWidgetKeyList->setItem(i + keywords.size(), 0, id);
+        tableWidgetKeyList->setItem(i + keywords.size(), 1, type);
+    }
+}

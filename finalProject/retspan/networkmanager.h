@@ -40,6 +40,8 @@ signals:
 
     void receivedUploadNotification(Node from, QString fileID);
 
+    void receivedKeysMotherfucker(Node from);
+
 public slots:
     void receiveData();
 

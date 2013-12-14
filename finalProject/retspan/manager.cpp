@@ -16,10 +16,11 @@ Manager::Manager(QObject *parent) : QObject(parent) {
     localNode = new ChordNode(chordManager, localhost);
     connect(localNode, SIGNAL(receivedReplyFromChord(QString,Node)), this, SLOT(receivedReplyFromChord(QString, Node)));
 
-    kvs = new KeyValueStore();
+    kvs = new KeyValueStore(this);
 
     mainWindow = new MainWindow();
     mainWindow->labelNodeID->setText(localhost->getID());
+    mainWindow->setWindowTitle(localhost->toString() + " - ID: " + localhost->getID());
     mainWindow->show();
 
     connect(mainWindow->connectButton, SIGNAL(clicked()), this, SLOT(connectButtonClicked()));
@@ -34,7 +35,9 @@ Manager::Manager(QObject *parent) : QObject(parent) {
     connect(localNode, SIGNAL(updatedFingerTable(QVector<FingerEntry>)), mainWindow, SLOT(updatedFingerTable(QVector<FingerEntry>)));
     connect(localNode, SIGNAL(updatedPredecessor(Node)), mainWindow, SLOT(updatedPredecessor(Node)));
 
-    fileManager = new FileManager(chordManager, kvs);
+    fileManager = new FileManager(chordManager, kvs, mainWindow);
+
+    connect(kvs, SIGNAL(updatedKVS(QList<QString>,QList<QString>)), mainWindow, SLOT(updatedKVS(QList<QString>,QList<QString>)));
 }
 
 void Manager::receivedReplyFromChord(QString key, Node node) {    

@@ -2,23 +2,27 @@
 #include "util.h"
 
 #include <QHostAddress>
+#include <QDir>
 
 Node::Node() {
     this->address = NULL;
     this->port = NULL;
     this->ID = "";
+    this->downloadsFolder = "";
 }
 
 Node::Node(const Node& otherNode) {
     this->address = otherNode.address;
     this->port = otherNode.port;
     this->ID = otherNode.ID;
+    this->downloadsFolder = otherNode.downloadsFolder;
 }
 
 Node::Node(QHostAddress address, quint16 port) {
     this->address = address;
     this->port = port;
     this->ID = Util::createNodeID(this->toString());
+    this->downloadsFolder = QDir::currentPath() + "/" + ID + "_downloads";
     //qDebug() << "Node ID = " << this->ID;
 }
 
@@ -42,6 +46,7 @@ Node& Node::operator= (Node other) {
     this->address = other.address;
     this->port = other.port;
     this->ID = other.ID;
+    this->downloadsFolder = other.downloadsFolder;
 }
 
 QString Node::getAddressString() {

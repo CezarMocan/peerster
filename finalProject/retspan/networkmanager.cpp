@@ -114,6 +114,8 @@ void NetworkManager::receiveData() {
         } else if (type == Util::UPLOAD_NOTIFICATION) {
             QString fileID = variantMap[Util::IDS].toString();
             emit(receivedUploadNotification(sender, fileID));
+        } else if (type == Util::KEYS_MOTHERFUCKER) {
+            emit(receivedKeysMotherfucker(sender));
         }
         else {
             qDebug() << "Received message of unsupported type " + type;

@@ -43,6 +43,7 @@ QString Util::BLOCK_CONTENTS = QString("BLOCK_CONTENTS");
 QString Util::BLOCK_NUMBER = QString("BLOCK_NUMBER");
 
 QString Util::UPLOAD_NOTIFICATION = QString("UPLOAD_NOTIFICATION");
+QString Util::KEYS_MOTHERFUCKER = QString("KEYS_MOTHERFUCKER");
 
 /*
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
@@ -354,6 +355,13 @@ QVariantMap Util::createUploadNotification(QString fileID) {
     QVariantMap result;
     result.insert(TYPE, QVariant(UPLOAD_NOTIFICATION));
     result.insert(IDS, QVariant(fileID));
+
+    return result;
+}
+
+QVariantMap Util::createKeysMotherfucker() {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(KEYS_MOTHERFUCKER));
 
     return result;
 }

@@ -33,6 +33,7 @@ HEADERS  += mainwindow.h \
     node.h \
     util.h \
     manager.h \
+    fingerentry.h \
     filemanager.h \
     file.h \
     keyvaluestore.h

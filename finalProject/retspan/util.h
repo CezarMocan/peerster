@@ -52,6 +52,8 @@ public:
 
     static QString UPLOAD_NOTIFICATION;
 
+    static QString KEYS_MOTHERFUCKER;
+
 
     Util();
     static QString createNodeID(QString name);
@@ -86,6 +88,8 @@ public:
     static QVariantMap createDownloadBlockReply(QString fileID, quint32 block, QByteArray blockContents);
 
     static QVariantMap createUploadNotification(QString fileID);
+
+    static QVariantMap createKeysMotherfucker();
 
     static void parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node);
     static void parseVariantMapKey(QVariantMap variantMap, QString &key);

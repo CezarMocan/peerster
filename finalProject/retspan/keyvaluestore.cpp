@@ -3,15 +3,16 @@
 #include <QPair>
 #include <QMap>
 #include <QDebug>
+#include <QObject>
 
 #include "keyvaluestore.h"
 
-quint32 KeyValueStore::BLOCK_SIZE = 8192;
-
-KeyValueStore::KeyValueStore() {
+KeyValueStore::KeyValueStore(QObject *parent) : QObject(parent) {
     keywordToID = new QMap<QString, QList<QPair<QString, QString> > >();
     IDToContents = new QMap<QString, QByteArray>();
 }
+
+quint32 KeyValueStore::BLOCK_SIZE = 8192;
 
 QList<QPair<QString, QString> > KeyValueStore::keywordLookup(QString keyword) {
     return keywordToID->value(keyword);
@@ -38,20 +39,25 @@ void KeyValueStore::updateKeywordList(QString keyword, QString fileID, QString f
 
         (*keywordToID)[keyword].push_back(pairToUpdate);
     }
+
+    emit(updatedKVS(keywordToID->keys(), IDToContents->keys()));
 }
 
 void KeyValueStore::addFile(QString fileID, QByteArray contents) {
     if (IDToContents->find(fileID) == IDToContents->end()) {
         IDToContents->insert(fileID, contents);
+        emit(updatedKVS(keywordToID->keys(), IDToContents->keys()));
     }
 }
 
 void KeyValueStore::removeFile(QString fileID) {
     IDToContents->remove(fileID);
+    emit(updatedKVS(keywordToID->keys(), IDToContents->keys()));
 }
 
 void KeyValueStore::removeKeyword(QString keyword) {
     keywordToID->remove(keyword);
+    emit(updatedKVS(keywordToID->keys(), IDToContents->keys()));
 }
 
 
