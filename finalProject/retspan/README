@@ -1,0 +1,61 @@
+Usage instructions for the final project: 
+
+The user interface as you can see has 4 tabs: Chord info, Local Key-Value store,
+File upload, Search
+
+1. Chord info - as the title says, it shows information related to the Chord 
+layer of the application. Whenever a new node is started, you need to
+manually connect it to a node that's already in the Chord network, using the
+botton part of the UI (Address, Port and the Connect button). 
+
+After connecting, you will be able to see the Status updating from Initializing
+to Ready, the finger table getting populated and the predecessor updated to
+the rightful predecessor in the Chord circle. 
+
+Currently I am using a key space of 16 bits, which should be enough for demo
+purposes. If you want to change the size of the keyspace, all you need to do 
+is go to util.cpp and change the KEYSPACE_SIZE constant to the new size as
+well as the 3 constants above it (MAX_VALUE, ONE, ZERO - make them have the 
+same number of bits as KEYSPACE_SIZE). 
+
+
+2. File upload - can upload any file from disk here. After uploading, the
+program parses the title, extracts the keywords and updates the DHT with
+the keywords and the file itself (all keywords and the file are assigned hashes 
+and are sent to the nodes who are responsible for those hashes). 
+
+The keyword detection algorithm is pretty dumb right now, it just separates by
+space in the file name, so for example a file called "Chord Paper" will have 
+2 keywords, "chord" and "paper", while a file called "chord_paper" will have
+a single keyword, "chordpaper" (i'm eliminating everything non alpha-numeric).
+So if you want to test it the best results will be obtained if the names of the
+used files are going to be space separated. 
+
+
+3. Local key-value store - here you will be able to see all the keys that the 
+current node is responsible for and holding in its internal KVS. There are 2
+types of keys, as I described in the proposal: keywords and file IDs. The 
+key-value store is currently stored in memory, but changing it to disk storage
+should not be hard. You will see the table in the local key-value store 
+changing for some nodes whenever a new file is uploaded in the system / a node 
+joins or leaves the system. 
+
+
+4. Search - you can search by keyword, only 1 word is supported at the moment.
+You will get as results all the files whose titles include that word. The 
+keyword detection / search algorithm could use a lot of improvement, but it's
+beyond the scope of this final project. 
+
+
+Node joins -> whenever a new node joins the network you will see the finger 
+tables updating for a bunch of other nodes, as well as the predecessor for 
+the node with the next ID on the Chord circle. The local key-value stores will
+change too, the new node will receive the keys who live in the keyspace between
+itself and its predecessor. 
+
+Node failure -> whenever a node leaves the network, the Chord protocol will 
+stabilize the network in a few seconds. (< 5 seconds in my tests, I tested 
+with 10 nodes and around 50 keys - keywords+files). Because of the replication
+the keys that the node which failed was responsible for will get transfered 
+to their new rightful owner and you will be able to still see all of them in
+the key-value store tables, search and find them or download those files. 
