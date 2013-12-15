@@ -32,7 +32,7 @@ public:
     QMap<QString, QList<QPair<QString, QString> > > *keywordToID;
     QMap<QString, QByteArray> *IDToContents;
 
-    /*
+
     QList<QPair<QString, QString> > keywordLookupReplica(QString keyword);
     QByteArray getFileReplica(QString fileID);
 
@@ -47,7 +47,6 @@ public:
 
     QMap<QString, QList<QPair<QString, QString> > > *keywordToIDReplica;
     QMap<QString, QByteArray> *IDToContentsReplica;
-    */
 
 
 signals:

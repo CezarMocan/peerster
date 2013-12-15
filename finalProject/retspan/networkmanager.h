@@ -45,6 +45,13 @@ signals:
     void receivedUAliveBoss(Node from);
     void receivedYesBoss(Node from);
 
+    void receivedKeywordUpdateReplica(QString keyword, QString fileID, QString fileName);
+    void receivedDownloadRequestReplica(Node from, QString fileID);
+    void receivedDownloadReplyReplica(QString fileID, quint32 fileSize, quint32 noBlocks);
+    void receivedDownloadBlockRequestReplica(Node from, QString fileID, quint32 block);
+    void receivedDownloadBlockReplyReplica(QString fileID, quint32 block, QByteArray blockContents);
+    void receivedUploadNotificationReplica(Node from, QString fileID);
+
 public slots:
     void receiveData();
 

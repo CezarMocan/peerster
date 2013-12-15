@@ -42,7 +42,7 @@ void ChordNode::updateSecondSuccessor() {
 
 void ChordNode::checkSuccessor() {
     if (responseFromSuccessor == false) {
-        qDebug() << "The king is dead! Long live the king!";
+        //qDebug() << "The king is dead! Long live the king!";
         // Do some key transfer, update finger table, notify current second finger that I'm the successor now
         Node successor = (*fingerTable)[0].succ;
         for (int i = 0; i < Util::KEYSPACE_SIZE; i++) {
@@ -50,10 +50,8 @@ void ChordNode::checkSuccessor() {
                 (*fingerTable)[i].succ = secondSuccessor;
         }
 
-        QByteArray datagram = Util::serializeVariantMap(Util::createUpdatePredecessor(*localhost));
-        chordManager->sendData((*fingerTable)[0].succ, datagram);
-
         emit(updatedFingerTable(*fingerTable));
+        emit(updatedSuccessor((*fingerTable)[0].succ));
         responseFromSuccessor = true;
     }
 
@@ -70,13 +68,13 @@ void ChordNode::checkFingerTable() {
 }
 
 void ChordNode::receivedUAliveBoss(Node from) {
-    qDebug() << "received U_ALIVE_BOSS";
+    //qDebug() << "received U_ALIVE_BOSS";
     QByteArray datagram = Util::serializeVariantMap(Util::createYesBoss());
     chordManager->sendData(from, datagram);
 }
 
 void ChordNode::receivedYesBoss(Node from) {
-    qDebug() << "received YES_BOSS from successor";
+    //qDebug() << "received YES_BOSS from successor";
     responseFromSuccessor = true;
 }
 
@@ -141,7 +139,7 @@ Node ChordNode::findFingerSuccessor(QString key) { //TODO: this shit could use s
 }
 
 void ChordNode::initFingerTable(Node neighbour, int position) {
-    qDebug() << "Running init finger table for position " << position << " neighbour is " << neighbour.toString() << " key is " << (*fingerTable)[position].start;
+    //qDebug() << "Running init finger table for position " << position << " neighbour is " << neighbour.toString() << " key is " << (*fingerTable)[position].start;
     QByteArray datagram = Util::serializeVariantMap(Util::createChordQuery(*localhost, (*fingerTable)[position].start));
     sentQueries.insert((*fingerTable)[position].start, position);
     chordManager->sendData(neighbour, datagram);
@@ -154,7 +152,7 @@ void ChordNode::updateOthers(int position) {
                 (*fingerTable)[i].succ = *localhost;
         }
         printFingerTable();
-        qDebug() << "State is READY!";
+        //qDebug() << "State is READY!";
         this->state = READY;        
         emit(stateUpdateReady());
 
@@ -163,7 +161,7 @@ void ChordNode::updateOthers(int position) {
 
         chordManager->sendData(successor, datagram);
 
-        qDebug() << "Sent keys motherfucker to " << successor.toString();
+        //qDebug() << "Sent keys motherfucker to " << successor.toString();
 
         timerSuccessor->start(1500);
         timerFingerTable->start(2000);
@@ -250,13 +248,13 @@ void ChordNode::receivedChordQuery(Node from, QString key) {
 
 void ChordNode::receivedChordReply(QString key, Node value) {
     if (secondSuccessorSanityCheck.find(key) != secondSuccessorSanityCheck.end()) {
-        qDebug() << "Received reply for second successor! " << value.toString();
+        //qDebug() << "Received reply for second successor! " << value.toString();
         secondSuccessor = value;
         secondSuccessorSanityCheck.remove(key);
     }
 
     if (fingerPositionSanityCheck.find(key) != fingerPositionSanityCheck.end()) {
-        qDebug() << "Received reply for finger table sanity check!";
+        //qDebug() << "Received reply for finger table sanity check!";
         int position = fingerPositionSanityCheck[key];
         if (!((*fingerTable)[position].succ == value)) {
             (*fingerTable)[position].succ = value;
@@ -271,7 +269,7 @@ void ChordNode::receivedChordReply(QString key, Node value) {
     //qDebug() << "Received chord reply for key " << key << " value = " << value.toString();
     if (this->state == INITIALIZING) {
         if (sentQueries.find(key) == sentQueries.end()) {
-            qDebug() << "Received reply for a key that I did not request! " << key << "\n";
+            //qDebug() << "Received reply for a key that I did not request! " << key << "\n";
             return;
         }
 
@@ -336,11 +334,11 @@ void ChordNode::receivedGetPredecessorReply(Node neighbour, Node predecessor, in
                 this->state = UPDATING_OTHERS;
                 emit(updatedFingerTable(*fingerTable));
                 emit(stateUpdateUpdatingOthers());
-                qDebug() << "State UPDATING_OTHERS for node " << this->localhost->toString();
+                //qDebug() << "State UPDATING_OTHERS for node " << this->localhost->toString();
                 updateOthers(0);
             }
         } else {
-            qDebug() << "Received predecessor reply for position != 0! " << position << "\n";
+            //qDebug() << "Received predecessor reply for position != 0! " << position << "\n";
             return;
         }
     } else if (this->state == UPDATING_OTHERS) {
@@ -354,7 +352,7 @@ void ChordNode::receivedUpdatePredecessor(Node newPredecessor) {
     this->predecessor = newPredecessor;
     emit(updatedPredecessor(this->predecessor));
 
-    qDebug() << "Updated predecessor to " << newPredecessor.toString();
+    //qDebug() << "Updated predecessor to " << newPredecessor.toString();
     printFingerTable();
 }
 
@@ -380,7 +378,7 @@ void ChordNode::receivedUpdateFinger(Node newFinger, int position) {
 
         chordManager->sendData(successor, datagram);
 
-        qDebug() << "Sent keys motherfucker to " << successor.toString();
+        //qDebug() << "Sent keys motherfucker to " << successor.toString();
 
         timerSuccessor->start(1500);
         timerFingerTable->start(2000);
@@ -392,6 +390,7 @@ void ChordNode::receivedUpdateFinger(Node newFinger, int position) {
 }
 
 void ChordNode::printFingerTable() {
+    return;
     qDebug() << "Node = " << this->localhost->getID() << "Predecessor = " << this->predecessor.toString();
     for (int i = 0; i < Util::KEYSPACE_SIZE; i++) {
         qDebug() << i << ":" << (*fingerTable)[i].start << "-" << (*fingerTable)[i].stop << "->" << (*fingerTable)[i].succ.toString();

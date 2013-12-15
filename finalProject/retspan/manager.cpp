@@ -9,6 +9,7 @@ Manager::Manager(QObject *parent) : QObject(parent) {
     }
 
     connect(chordManager, SIGNAL(receivedKeywordUpdate(QString,QString,QString)), this, SLOT(receivedKeywordUpdate(QString,QString,QString)));
+    connect(chordManager, SIGNAL(receivedKeywordUpdateReplica(QString,QString,QString)), this, SLOT(receivedKeywordUpdateReplica(QString,QString,QString)));
     connect(chordManager, SIGNAL(receivedKeywordQuery(Node,QString)), this, SLOT(receivedKeywordQuery(Node,QString)));
     connect(chordManager, SIGNAL(receivedKeywordReply(QString,QVariantList,QVariantList)), this, SLOT(receivedKeywordReply(QString,QVariantList,QVariantList)));
 
@@ -35,7 +36,7 @@ Manager::Manager(QObject *parent) : QObject(parent) {
     connect(localNode, SIGNAL(updatedFingerTable(QVector<FingerEntry>)), mainWindow, SLOT(updatedFingerTable(QVector<FingerEntry>)));
     connect(localNode, SIGNAL(updatedPredecessor(Node)), mainWindow, SLOT(updatedPredecessor(Node)));
 
-    fileManager = new FileManager(chordManager, kvs, mainWindow);
+    fileManager = new FileManager(chordManager, kvs, mainWindow, localNode);
 
     connect(kvs, SIGNAL(updatedKVS(QList<QString>,QList<QString>)), mainWindow, SLOT(updatedKVS(QList<QString>,QList<QString>)));
 }
@@ -117,6 +118,15 @@ void Manager::receivedKeywordReply(QString keyword, QVariantList ids, QVariantLi
 void Manager::receivedKeywordUpdate(QString keyword, QString fileID, QString fileName) {
     //qDebug() << "Keyword update: " << keyword << fileID << fileName;
     kvs->updateKeywordList(keyword, fileID, fileName);
+    QByteArray datagram = Util::serializeVariantMap(Util::createKeywordUpdateReplica(keyword, fileID, fileName));
+    qDebug() << "Am pula mare";
+    qDebug() << "PRedecessor is " << localNode->predecessor.toString();
+    chordManager->sendData(localNode->predecessor, datagram);
+}
+
+void Manager::receivedKeywordUpdateReplica(QString keyword, QString fileID, QString fileName) {
+    qDebug() << "Keyword update replica: " << keyword << fileID << fileName;
+    kvs->updateKeywordListReplica(keyword, fileID, fileName);
 }
 
 void Manager::searchButtonClicked() {

@@ -120,6 +120,31 @@ void NetworkManager::receiveData() {
             emit(receivedUAliveBoss(sender));
         } else if (type == Util::YES_BOSS) {
             emit(receivedYesBoss(sender));
+        } else if (type == Util::KEYWORD_UPDATE_REPLICA) {
+            QString keyword = variantMap[Util::KEYWORD].toString();
+            QString fileID = variantMap[Util::IDS].toString();
+            QString fileName = variantMap[Util::NAMES].toString();
+            emit receivedKeywordUpdateReplica(keyword, fileID, fileName);
+        } else if (type == Util::DOWNLOAD_REQUEST_REPLICA) {
+            QString fileID = variantMap[Util::IDS].toString();
+            emit(receivedDownloadRequestReplica(sender, fileID));
+        } else if (type == Util::DOWNLOAD_REPLY_REPLICA) {
+            QString fileID = variantMap[Util::IDS].toString();
+            quint32 fileSize = variantMap[Util::FILE_SIZE].toUInt();
+            quint32 noBlocks = variantMap[Util::NO_BLOCKS].toUInt();
+            emit(receivedDownloadReplyReplica(fileID, fileSize, noBlocks));
+        } else if (type == Util::DOWNLOAD_BLOCK_REQUEST_REPLICA) {
+            QString fileID = variantMap[Util::IDS].toString();
+            quint32 blockNumber = variantMap[Util::BLOCK_NUMBER].toUInt();
+            emit(receivedDownloadBlockRequestReplica(sender, fileID, blockNumber));
+        } else if (type == Util::DOWNLOAD_BLOCK_REPLY_REPLICA) {
+            QString fileID = variantMap[Util::IDS].toString();
+            quint32 blockNumber = variantMap[Util::BLOCK_NUMBER].toUInt();
+            QByteArray blockContents = variantMap[Util::BLOCK_CONTENTS].toByteArray();
+            emit(receivedDownloadBlockReplyReplica(fileID, blockNumber, blockContents));
+        } else if (type == Util::UPLOAD_NOTIFICATION_REPLICA) {
+            QString fileID = variantMap[Util::IDS].toString();
+            emit(receivedUploadNotificationReplica(sender, fileID));
         }
         else {
             qDebug() << "Received message of unsupported type " + type;

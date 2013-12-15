@@ -57,6 +57,12 @@ public:
     static QString U_ALIVE_BOSS;
     static QString YES_BOSS;
 
+    static QString KEYWORD_UPDATE_REPLICA;
+    static QString DOWNLOAD_REQUEST_REPLICA;
+    static QString DOWNLOAD_REPLY_REPLICA;
+    static QString DOWNLOAD_BLOCK_REQUEST_REPLICA;
+    static QString DOWNLOAD_BLOCK_REPLY_REPLICA;
+    static QString UPLOAD_NOTIFICATION_REPLICA;
 
 
     Util();
@@ -97,6 +103,14 @@ public:
 
     static QVariantMap createUAliveBoss();
     static QVariantMap createYesBoss();
+
+    static QVariantMap createKeywordUpdateReplica(QString keyword, QString fileID, QString fileName);
+    static QVariantMap createDownloadRequestReplica(QString fileID);
+    static QVariantMap createDownloadReplyReplica(QString fileID, quint32 fileSize, quint32 noBlocks);
+    static QVariantMap createDownloadBlockRequestReplica(QString fileID, quint32 block);
+    static QVariantMap createDownloadBlockReplyReplica(QString fileID, quint32 block, QByteArray blockContents);
+    static QVariantMap createUploadNotificationReplica(QString fileID);
+
 
     static void parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node);
     static void parseVariantMapKey(QVariantMap variantMap, QString &key);

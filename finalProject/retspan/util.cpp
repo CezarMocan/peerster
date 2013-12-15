@@ -48,6 +48,13 @@ QString Util::KEYS_MOTHERFUCKER = QString("KEYS_MOTHERFUCKER");
 QString Util::U_ALIVE_BOSS = QString("U_ALIVE_BOSS");
 QString Util::YES_BOSS = QString("YES_BOSS");
 
+QString Util::KEYWORD_UPDATE_REPLICA = QString("KEYWORD_UPDATE_REPLICA");
+QString Util::DOWNLOAD_REQUEST_REPLICA = QString("DOWNLOAD_REQUEST_REPLICA");
+QString Util::DOWNLOAD_REPLY_REPLICA = QString("DOWNLOAD_REPLY_REPLICA");
+QString Util::DOWNLOAD_BLOCK_REQUEST_REPLICA = QString("DOWNLOAD_BLOCK_REQUEST_REPLICA");
+QString Util::DOWNLOAD_BLOCK_REPLY_REPLICA = QString("DOWNLOAD_BLOCK_REPLY_REPLICA");
+QString Util::UPLOAD_NOTIFICATION_REPLICA = QString("UPLOAD_NOTIFICATION_REPLICA");
+
 /*
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
 QString Util::ONE = "0000000000000000000000000000000000000001";
@@ -383,6 +390,61 @@ QVariantMap Util::createYesBoss() {
     return result;
 }
 
+QVariantMap Util::createKeywordUpdateReplica(QString keyword, QString fileID, QString fileName) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(KEYWORD_UPDATE_REPLICA));
+    result.insert(KEYWORD, QVariant(keyword));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(NAMES, QVariant(fileName));
+
+    return result;
+}
+
+QVariantMap Util::createDownloadRequestReplica(QString fileID) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_REQUEST_REPLICA));
+    result.insert(IDS, QVariant(fileID));
+
+    return result;
+}
+
+QVariantMap Util::createDownloadReplyReplica(QString fileID, quint32 fileSize, quint32 noBlocks) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_REPLY_REPLICA));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(FILE_SIZE, QVariant(fileSize));
+    result.insert(NO_BLOCKS, QVariant(noBlocks));
+
+    return result;
+
+}
+
+QVariantMap Util::createDownloadBlockRequestReplica(QString fileID, quint32 block) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_BLOCK_REQUEST_REPLICA));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(BLOCK_NUMBER, QVariant(block));
+
+    return result;
+}
+
+QVariantMap Util::createDownloadBlockReplyReplica(QString fileID, quint32 block, QByteArray blockContents) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(DOWNLOAD_BLOCK_REPLY_REPLICA));
+    result.insert(IDS, QVariant(fileID));
+    result.insert(BLOCK_NUMBER, QVariant(block));
+    result.insert(BLOCK_CONTENTS, QVariant(blockContents));
+
+    return result;
+}
+
+QVariantMap Util::createUploadNotificationReplica(QString fileID) {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(UPLOAD_NOTIFICATION_REPLICA));
+    result.insert(IDS, QVariant(fileID));
+
+    return result;
+}
 
 void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node) {
     node.setAddressString(variantMap[NODE_ADDRESS].toString());

@@ -21,13 +21,15 @@ public:
     Node findFingerSuccessor(QString key);
     Node findFingerPredecessor(QString key);
     void chordQuery(QString key);
+    Node predecessor;
 
 signals:
     void receivedReplyFromChord(QString key, Node value);
     void stateUpdateUpdatingOthers();
     void stateUpdateReady();
     void updatedFingerTable(QVector<FingerEntry> fingerTable);
-    void updatedPredecessor(Node predecessor);
+    void updatedPredecessor(Node predecessor);    
+    void updatedSuccessor(Node successor);
 
 public slots:
     // UI slots
@@ -60,8 +62,7 @@ private:
     Node *localhost;
     QVector<FingerEntry> *fingerTable;
     QVector<Node> *neighbourTable;    
-    State state;
-    Node predecessor;
+    State state;    
     Node neighbour;
 
     QHash<QString, int> sentQueries;

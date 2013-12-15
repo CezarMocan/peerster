@@ -41,6 +41,8 @@ public slots:
     void receivedKeywordUpdate(QString keyword, QString fileID, QString fileName);
     void gotDownloadRequest(int row, int column);
 
+    void receivedKeywordUpdateReplica(QString keyword, QString fileID, QString fileName);
+
 private:
     QMap<QString, bool> pendingFileQueries;
 
