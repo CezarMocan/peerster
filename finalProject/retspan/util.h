@@ -54,6 +54,10 @@ public:
 
     static QString KEYS_MOTHERFUCKER;
 
+    static QString U_ALIVE_BOSS;
+    static QString YES_BOSS;
+
+
 
     Util();
     static QString createNodeID(QString name);
@@ -90,6 +94,9 @@ public:
     static QVariantMap createUploadNotification(QString fileID);
 
     static QVariantMap createKeysMotherfucker();
+
+    static QVariantMap createUAliveBoss();
+    static QVariantMap createYesBoss();
 
     static void parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node);
     static void parseVariantMapKey(QVariantMap variantMap, QString &key);

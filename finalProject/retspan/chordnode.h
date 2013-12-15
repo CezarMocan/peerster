@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QVector>
 #include <QHash>
+#include <QTimer>
 
 #include "networkmanager.h"
 #include "node.h"
@@ -40,6 +41,12 @@ public slots:
     void receivedUpdateFinger(Node newFinger, int position);
     void receivedChordQueryPred(Node from, QString key);
     void receivedChordReplyPred(QString key, Node value);
+    void receivedUAliveBoss(Node from);
+    void receivedYesBoss(Node from);
+
+    void checkSuccessor();
+    void checkFingerTable();
+    void updateSecondSuccessor();
 
 
 private:
@@ -59,6 +66,16 @@ private:
 
     QHash<QString, int> sentQueries;
     QHash<QString, int> sentUpdateOthers;
+
+    QTimer *timerSuccessor;
+    bool responseFromSuccessor;
+
+    QTimer *timerFingerTable;
+    QMap<QString, int> fingerPositionSanityCheck;
+
+    QTimer *timerSecondSuccessor;
+    QMap<QString, int> secondSuccessorSanityCheck;
+    Node secondSuccessor;
 };
 
 #endif // CHORDNODE_H

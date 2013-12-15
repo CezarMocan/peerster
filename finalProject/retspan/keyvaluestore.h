@@ -32,6 +32,24 @@ public:
     QMap<QString, QList<QPair<QString, QString> > > *keywordToID;
     QMap<QString, QByteArray> *IDToContents;
 
+    /*
+    QList<QPair<QString, QString> > keywordLookupReplica(QString keyword);
+    QByteArray getFileReplica(QString fileID);
+
+    void updateKeywordListReplica(QString keyword, QString fileID, QString fileName);
+    void addFileReplica(QString fileID, QByteArray contents);
+
+    void removeFileReplica(QString fileID);
+    void removeKeywordReplica(QString keyword);
+
+    quint32 getNoBlocksReplica(QString fileID);
+    QByteArray getBlockReplica(QString fileID, quint32 blockNo);
+
+    QMap<QString, QList<QPair<QString, QString> > > *keywordToIDReplica;
+    QMap<QString, QByteArray> *IDToContentsReplica;
+    */
+
+
 signals:
     void updatedKVS(QList<QString> keywords, QList<QString> files);
 

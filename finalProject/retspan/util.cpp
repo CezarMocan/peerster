@@ -45,6 +45,9 @@ QString Util::BLOCK_NUMBER = QString("BLOCK_NUMBER");
 QString Util::UPLOAD_NOTIFICATION = QString("UPLOAD_NOTIFICATION");
 QString Util::KEYS_MOTHERFUCKER = QString("KEYS_MOTHERFUCKER");
 
+QString Util::U_ALIVE_BOSS = QString("U_ALIVE_BOSS");
+QString Util::YES_BOSS = QString("YES_BOSS");
+
 /*
 QString Util::MAX_VALUE = "ffffffffffffffffffffffffffffffffffffffff";
 QString Util::ONE = "0000000000000000000000000000000000000001";
@@ -365,6 +368,21 @@ QVariantMap Util::createKeysMotherfucker() {
 
     return result;
 }
+
+QVariantMap Util::createUAliveBoss() {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(U_ALIVE_BOSS));
+
+    return result;
+}
+
+QVariantMap Util::createYesBoss() {
+    QVariantMap result;
+    result.insert(TYPE, QVariant(YES_BOSS));
+
+    return result;
+}
+
 
 void Util::parseChordVariantMap(QVariantMap variantMap, QString &type, Node &node) {
     node.setAddressString(variantMap[NODE_ADDRESS].toString());

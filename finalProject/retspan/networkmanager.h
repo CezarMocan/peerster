@@ -42,6 +42,9 @@ signals:
 
     void receivedKeysMotherfucker(Node from);
 
+    void receivedUAliveBoss(Node from);
+    void receivedYesBoss(Node from);
+
 public slots:
     void receiveData();
 

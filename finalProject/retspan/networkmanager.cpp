@@ -116,6 +116,10 @@ void NetworkManager::receiveData() {
             emit(receivedUploadNotification(sender, fileID));
         } else if (type == Util::KEYS_MOTHERFUCKER) {
             emit(receivedKeysMotherfucker(sender));
+        } else if (type == Util::U_ALIVE_BOSS) {
+            emit(receivedUAliveBoss(sender));
+        } else if (type == Util::YES_BOSS) {
+            emit(receivedYesBoss(sender));
         }
         else {
             qDebug() << "Received message of unsupported type " + type;
